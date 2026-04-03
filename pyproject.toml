@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "deepcurrent-local-mcp"
+version = "0.1.0"
+description = "Open-source Local MCP server for DeepCurrent Cloud + BYOD connectors."
+authors = ["DeepCurrent Team <team@deepcurrent.com>"]
+readme = "README.md"
+packages = [{ include = "deepcurrent_local_mcp", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastmcp = "2.14.5"
+httpx = "^0.28.0"
+python-dotenv = "^1.0.1"
+smithery = "^0.4.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+
+[tool.poetry.scripts]
+deepcurrent-local-mcp = "deepcurrent_local_mcp.__main__:main"
+dev = "smithery.cli.dev:main"
+playground = "smithery.cli.playground:main"
+
+[tool.smithery]
+# Smithery expects a function decorated with @smithery.server().
+server = "deepcurrent_local_mcp.smithery_server:create_server"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
