@@ -15,7 +15,7 @@ Badges are a promotion pipeline and a trust boundary:
 
 - **community**: local-only, unreviewed BYOD/BYOK connectors
 - **certified**: local-only, reviewed connectors (stable schemas + bounded outputs). Still BYOD/BYOK.
-- **official**: cloud-backed tools operated by DeepCurrent (credit/entitlement integrated)
+- **official**: cloud-backed tools operated by DeepCurrent and eligible for paid credits
 
 Guideline:
 - If it requires running third-party code, it stays **local** (community/certified).
@@ -63,6 +63,6 @@ pytest -q
 bash scripts/qa_mcp.sh
 ```
 
-Product QA checklist (Cursor, hosted MCP, sign-off) lives in the **DeepCurrent-APIv1.0** repo: `PRDs/Phase 15/QA Chat Phase 15 - Local and Remote MCP.md`.
+For product QA, run Inspector or your target MCP client against the absolute path to `.venv/bin/deepcurrent-local-mcp`, then call `tools/list` and any relevant smoke-test tools.
 
-MCP **Inspector** quick smoke (stdio + one tool call, no API key): `bash scripts/inspector_smoke.sh` (requires `npx` and a venv with `pip install -e .`).
+MCP **Inspector** quick smoke (stdio + one tool call, no API key): `bash scripts/inspector_smoke.sh` (requires `npx` and a venv with `pip install .`).

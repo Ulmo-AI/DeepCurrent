@@ -1,64 +1,211 @@
-# DeepCurrent MCP (Local + Hosted)
+# DeepCurrent MCP
 
-DeepCurrent brings **web3 intelligence + automation** to any MCP client (desktop, CLI, or agent gateways like OpenClaw).
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=deepcurrent-cloud&config=eyJ1cmwiOiJodHRwczovL21jcC5kZWVwY3VycmVudC5hcHAvbWNwIiwiaGVhZGVycyI6eyJYLUFQSS1LZXkiOiJkY19ZT1VSX0FQSV9LRVkifX0%3D)
 
-This repo is the **open-source Local MCP server** (BYOD connectors + optional DeepCurrent Cloud tools). For the best experience, connect to **DeepCurrent Cloud** for managed data, credits, and premium workflows.
+[![Website](https://img.shields.io/badge/Website-deepcurrent.app-blue)](https://deepcurrent.app)
+[![Dashboard](https://img.shields.io/badge/Dashboard-dashboard.deepcurrent.app-black)](https://dashboard.deepcurrent.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Ulmo-AI/DeepCurrent?style=social)](https://github.com/Ulmo-AI/DeepCurrent/stargazers)
 
-**Learn more / upgrade:** `https://deepcurrent.app` *(landing page)*
-**Cloud dashboard:** `https://dashboard.deepcurrent.app` *(app)*
+DeepCurrent gives AI agents a **web3-native growth intelligence engine**: discover high-fit users, builders, KOLs, projects, investors, communities, and market signals, then turn them into evidence-backed next actions.
 
-## What you get (Cloud vs local)
+It is built for founders, growth teams, researchers, business development teams, funds, ecosystem teams, and technical builders who need to move from "what is happening in web3?" to "who should we talk to, why, and what should happen next?"
 
-DeepCurrent is more than “lists”. The Cloud product is where the premium capabilities live:
+This repo contains the open-source **local MCP server** for bring-your-own-data connectors and optional DeepCurrent Cloud access. For the fastest setup and the most powerful workflows, connect to the hosted DeepCurrent Cloud MCP gateway.
 
-- **Intelligence workflows**: curated discovery with rationale, then expand into actionable access (contacts + network paths)
-- **Web scraping & crawling**: quote-first, metered runs with structured outputs
-- **Lead generation pipelines**: enrich targets, dedupe, and turn criteria into outreach-ready lists
-- **Telegram operations**: moderation workflows, monitoring, and automation surfaces
-- **Outreach automation**: email and messaging workflows (plan-dependent / evolving)
-- **Credits + entitlements**: consistent quote → confirm → execute UX across tools
+## What DeepCurrent Unlocks
 
-Local MCP (this repo) gives you:
+- **Telegram-native growth intelligence:** find prospects in target groups, monitor pain and intent, detect competitor displacement, and expand KOL audiences from high-signal communities.
+- **Evidence-backed lead discovery:** rank people, projects, builders, KOLs, funds, and communities with fit reasons, confidence, evidence snippets, and recommended next actions.
+- **Web3 research workflows:** enrich companies, projects, people, wallets, funding context, ecosystem roles, and relationship paths from DeepCurrent intelligence surfaces.
+- **Growth execution planning:** resolve an outcome, quote the work, run the plan, and retrieve structured results through one agent-friendly tool chain.
+- **Web crawling and market mapping:** quote-first crawling and structured extraction for sites, communities, and ecosystem surfaces.
+- **Local bring-your-own-data connectors:** keep user-owned files, keys, and community connectors on your machine while still using Cloud tools when you provide an API key.
 
-- **BYOD connectors** (local files + user-owned APIs/keys)
-- A **thin bridge** to DeepCurrent Cloud tools using `X-API-Key` (optional)
+DeepCurrent does not dump raw social data into a model. It returns transformed, decision-ready outputs: ranked candidates, signals, evidence, confidence, risk flags, and recommended next steps such as observe, enrich, watchlist, human review, or outreach handoff.
 
-## Transports: what works where
+## Fastest Setup
 
+### Hosted MCP: No Local Install
 
-| Transport                    | This server                                                      | Typical clients                                                                                                                                                                                                                            |
-| ---------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **STDIO** (default)          | `deepcurrent-local-mcp` with no `DEEPCURRENT_MCP_TRANSPORT`      | Cursor, Claude Desktop, Claude Code, OpenAI Codex, OpenClaw, most MCP hosts                                                                                                                                                                |
-| **Streamable HTTP** (local)  | `DEEPCURRENT_MCP_TRANSPORT=http` (debugging on `127.0.0.1` only) | Same clients that can point MCP at a `http(s)://` URL (e.g. Cursor, Codex) — see *Optional: local HTTP* below                                                                                                                              |
-| **Streamable HTTP** (hosted) | `https://mcp.deepcurrent.app/mcp`                                | No local install; use in clients that support remote MCP by URL + headers (Cursor, Codex, Anthropic [Messages API MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector) for **remote** HTTP only — not stdio) |
+Use this if your MCP client supports remote Streamable HTTP servers.
 
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-light.svg)](https://cursor.com/en/install-mcp?name=deepcurrent-cloud&config=eyJ1cmwiOiJodHRwczovL21jcC5kZWVwY3VycmVudC5hcHAvbWNwIiwiaGVhZGVycyI6eyJYLUFQSS1LZXkiOiJkY19ZT1VSX0FQSV9LRVkifX0%3D)
 
-**Anthropic API note:** The [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector) attaches to **public HTTP** MCP servers from the Messages API. It does **not** run local STDIO processes; use the hosted DeepCurrent URL there, not this Python binary.
+After installing, replace the placeholder `dc_YOUR_API_KEY` with your DeepCurrent API key.
 
-## Quick start
+Manual config:
 
-### Hosted (no install)
+```json
+{
+  "mcpServers": {
+    "deepcurrent-cloud": {
+      "url": "https://mcp.deepcurrent.app/mcp",
+      "headers": {
+        "X-API-Key": "dc_YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
 
-Connect to the DeepCurrent Cloud MCP gateway:
+The hosted gateway exposes the official Cloud-backed tool set. It is best for managed data, credits, premium workflows, and no local Python setup.
 
-- **MCP URL**: `https://mcp.deepcurrent.app/mcp` *(beta; Streamable HTTP)*
-- **Auth header**: `X-API-Key: <your DeepCurrent API key>`
+### Local MCP: Bring Your Own Data
 
-This is ideal when you do not want a local Python install. Community/BYOD plugins are intentionally **local only**; the hosted surface is the official cloud-backed tool set.
+Use this if you want local connectors, local files, user-owned API keys, or strict data residency. The local server runs over STDIO by default, which is what most desktop and CLI MCP clients expect.
 
-Note: while the hosted MCP is in beta, it may be backed by the staging Cloud environment as we finalize production rollout.
+```bash
+git clone https://github.com/Ulmo-AI/DeepCurrent.git
+cd DeepCurrent
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install .
+deepcurrent-local-mcp
+```
 
-### Local (BYOD + full control)
+Verify the package before adding it to a client:
 
-Run the local server on your machine (best for BYOD files and strict data residency). **Default transport is STDIO**, which is what most MCP clients expect.
+```bash
+.venv/bin/python -c "import deepcurrent_local_mcp; print('ok')"
+```
 
-## Requirements
+## Client Setup
 
-- Python 3.11+
+| Client | Best path | Notes |
+| --- | --- | --- |
+| Cursor | Hosted install button or manual `mcp.json` | Edit the placeholder API key after install. |
+| Claude Code | `claude mcp add` | Supports stdio and HTTP servers. |
+| Claude Desktop | Manual config | Best for local stdio today. |
+| OpenAI Codex | `codex mcp add` or `config.toml` | Supports stdio and remote HTTP config. |
+| OpenClaw | Manual gateway config | Use the local stdio server path. |
+| Smithery | Planned distribution path | Hosted listing or local desktop bundle, depending on auth and packaging. |
 
-## Install
+<details>
+<summary>Cursor manual setup</summary>
 
-### Option A: From source (pip)
+Cursor config locations:
+
+- Project: `.cursor/mcp.json`
+- User/global: `~/.cursor/mcp.json` (Windows: `%USERPROFILE%\.cursor\mcp.json`)
+
+Hosted:
+
+```json
+{
+  "mcpServers": {
+    "deepcurrent-cloud": {
+      "url": "https://mcp.deepcurrent.app/mcp",
+      "headers": {
+        "X-API-Key": "dc_YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Local:
+
+```json
+{
+  "mcpServers": {
+    "deepcurrent": {
+      "command": "/absolute/path/to/deepcurrent-local-mcp",
+      "args": [],
+      "env": {
+        "DEEPCURRENT_API_KEY": "dc_YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Claude Code and Claude Desktop</summary>
+
+Claude Code local stdio:
+
+```bash
+claude mcp add --transport stdio --env DEEPCURRENT_API_KEY=dc_YOUR_API_KEY deepcurrent -- /absolute/path/to/deepcurrent-local-mcp
+```
+
+Claude Code hosted HTTP:
+
+```bash
+claude mcp add --transport http deepcurrent-cloud https://mcp.deepcurrent.app/mcp --header "X-API-Key: dc_YOUR_API_KEY"
+```
+
+Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "deepcurrent": {
+      "command": "/absolute/path/to/deepcurrent-local-mcp",
+      "args": [],
+      "env": {
+        "DEEPCURRENT_API_KEY": "dc_YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Claude Desktop config locations:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+</details>
+
+<details>
+<summary>OpenAI Codex and OpenClaw</summary>
+
+Codex local stdio:
+
+```bash
+codex mcp add deepcurrent --env DEEPCURRENT_API_KEY=dc_YOUR_API_KEY -- /absolute/path/to/deepcurrent-local-mcp
+```
+
+Codex hosted HTTP in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.deepcurrent-cloud]
+url = "https://mcp.deepcurrent.app/mcp"
+env_http_headers = { "X-API-Key" = "DEEPCURRENT_API_KEY" }
+```
+
+OpenClaw local gateway config:
+
+```json5
+{
+  mcp: {
+    servers: {
+      deepcurrent: {
+        command: "/absolute/path/to/deepcurrent-local-mcp",
+        args: [],
+        env: {
+          DEEPCURRENT_API_KEY: "dc_YOUR_API_KEY",
+          DEEPCURRENT_API_URL: "https://api.deepcurrent.app",
+        },
+      },
+    },
+  },
+}
+```
+
+</details>
+
+## Local Install Details
+
+### Requirements
+
+- Python 3.11, 3.12, or 3.13 recommended
+- Python 3.14 is not recommended yet for local MCP testing because of current dependency issues seen during QA
+
+### From Source
 
 ```bash
 git clone https://github.com/Ulmo-AI/DeepCurrent.git
@@ -76,7 +223,7 @@ deepcurrent-local-mcp
 
 Use `cd` into whichever directory your clone created that contains this repo’s `pyproject.toml` (folder name may differ if you use a fork or mirror).
 
-**Verify the package is installed** (before MCP Inspector, Cursor, or any client that spawns the stdio binary):
+Verify the package is installed before MCP Inspector, Cursor, or any client that spawns the stdio binary:
 
 ```bash
 .venv/bin/python -c "import deepcurrent_local_mcp; print('ok')"
@@ -86,27 +233,16 @@ If you see `ModuleNotFoundError: No module named 'deepcurrent_local_mcp'`, the p
 
 **Editable install on macOS + Python 3.14+:** `pip install -e .` writes a `*.pth` file under `site-packages`. If that file has the **hidden** file flag, CPython’s `site` module **skips** it and the package still won’t import. Fix one of: use a normal install `pip install .` (recommended for local MCP), or run `chflags nohidden .venv/lib/python3.*/site-packages/deepcurrent_local_mcp.pth` (adjust the `python3.*` folder to match your venv), then re-run the one-liner above.
 
-### Option B: Poetry (contributors)
+### Poetry for Contributors
 
 ```bash
 poetry install
 poetry run deepcurrent-local-mcp
 ```
 
-### Option C: Smithery (optional)
+### Cloud API Key
 
-If this package is listed on [Smithery](https://smithery.ai), install into a client with the Smithery CLI, for example:
-
-```bash
-npx -y @smithery/cli@latest install <smithery-server-id> --client claude
-npx -y @smithery/cli@latest install <smithery-server-id> --client cursor
-```
-
-Replace `<smithery-server-id>` with the ID from the server’s Smithery page. List supported install targets: `npx -y @smithery/cli@latest list clients`.
-
-## Configure (env + config file)
-
-You can use community/BYOD tools with **no DeepCurrent account**.
+You can use community bring-your-own-data tools with **no DeepCurrent account**.
 
 To enable official DeepCurrent Cloud tools, set:
 
@@ -129,11 +265,9 @@ Example:
 }
 ```
 
-## Add to an MCP client
+## Finding the Local Executable
 
-**Agent-assisted setup:** In **Cursor**, **Claude Code**, or any IDE with a coding agent, you can point the agent at this README (open the file in the workspace, or paste a link to the same document in your public repo) and ask it to **register the DeepCurrent MCP server** in your client config. Have it use the examples below, resolve `**which deepcurrent-local-mcp` / `where deepcurrent-local-mcp`** to an **absolute path**, and put the API key in **config `env` / TOML `env` / `headers` expansion** — not in the chat transcript.
-
-This server uses **STDIO** by default. Most clients need an **absolute path** to the executable because they do not load your shell `PATH`.
+Most MCP clients need an **absolute path** to the executable because they do not load your shell `PATH`.
 
 Find the path:
 
@@ -147,180 +281,7 @@ where deepcurrent-local-mcp
 
 Replace `/absolute/path/to/deepcurrent-local-mcp` in the examples below. After editing client config, **fully restart the client** (not only reload window) so the MCP process starts cleanly.
 
-### Cursor
-
-- **Project:** `.cursor/mcp.json` in the repo root
-- **User (global):** `~/.cursor/mcp.json` (Windows: `%USERPROFILE%\.cursor\mcp.json`)
-
-You can also use **Settings → Tools & MCP** to add a server; Cursor writes the same JSON shape.
-
-**Local (stdio):**
-
-```json
-{
-  "mcpServers": {
-    "deepcurrent": {
-      "command": "/absolute/path/to/deepcurrent-local-mcp",
-      "args": [],
-      "env": {
-        "DEEPCURRENT_API_KEY": "dc_..."
-      }
-    }
-  }
-}
-```
-
-**Hosted (Streamable HTTP, no local install):**
-
-```json
-{
-  "mcpServers": {
-    "deepcurrent-cloud": {
-      "url": "https://mcp.deepcurrent.app/mcp",
-      "headers": {
-        "X-API-Key": "dc_..."
-      }
-    }
-  }
-}
-```
-
-If your Cursor build only supports `Authorization`, map your key there per client docs, or keep using the local stdio server and pass the key in `env` as above.
-
-### Claude Code (CLI / IDE extension)
-
-Full reference: [Connect Claude Code to tools via MCP](https://code.claude.com/docs/en/mcp). Options such as `--transport`, `--env`, and `--scope` must appear **before** the server name; the command to run the server comes **after** `--`.
-
-**Local (stdio) via CLI (recommended):**
-
-```bash
-claude mcp add --transport stdio --env DEEPCURRENT_API_KEY=dc_... deepcurrent -- /absolute/path/to/deepcurrent-local-mcp
-```
-
-**Hosted (Streamable HTTP) via CLI:**
-
-```bash
-claude mcp add --transport http deepcurrent-cloud https://mcp.deepcurrent.app/mcp --header "X-API-Key: dc_..."
-```
-
-Use `claude mcp list`, `claude mcp get <name>`, and `claude mcp --help` for lifecycle commands. In-session, `/mcp` shows server status.
-
-**Manual JSON (project `.mcp.json` or as generated by the CLI):** stdio servers use `command` / `args` / `env` (no extra `type` field required). User-scoped entries also live in `~/.claude.json` if you add with `--scope user` — see the doc for scope and precedence.
-
-```json
-{
-  "mcpServers": {
-    "deepcurrent": {
-      "command": "/absolute/path/to/deepcurrent-local-mcp",
-      "args": [],
-      "env": {
-        "DEEPCURRENT_API_KEY": "dc_..."
-      }
-    }
-  }
-}
-```
-
-**Hosted in `.mcp.json` (optional):**
-
-```json
-{
-  "mcpServers": {
-    "deepcurrent-cloud": {
-      "type": "http",
-      "url": "https://mcp.deepcurrent.app/mcp",
-      "headers": {
-        "X-API-Key": "dc_..."
-      }
-    }
-  }
-}
-```
-
-Claude Code supports `${VAR}` expansion in `command`, `url`, and `headers` (see the same doc) so you can avoid committing API keys.
-
-### Claude Desktop
-
-**Settings → Developer → Edit config.**
-
-```json
-{
-  "mcpServers": {
-    "deepcurrent": {
-      "command": "/absolute/path/to/deepcurrent-local-mcp",
-      "args": [],
-      "env": {
-        "DEEPCURRENT_API_KEY": "dc_..."
-      }
-    }
-  }
-}
-```
-
-Config locations:
-
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
-### OpenAI Codex (CLI + IDE extension)
-
-Codex stores MCP servers in **TOML**: default `~/.codex/config.toml`, or project-scoped `.codex/config.toml` in trusted projects. The [Codex MCP doc](https://developers.openai.com/codex/mcp) is authoritative.
-
-**CLI (stdio):**
-
-```bash
-codex mcp add deepcurrent --env DEEPCURRENT_API_KEY=dc_... -- /absolute/path/to/deepcurrent-local-mcp
-```
-
-**Manual `config.toml` (stdio):**
-
-```toml
-[mcp_servers.deepcurrent]
-command = "/absolute/path/to/deepcurrent-local-mcp"
-args = []
-# env block for the child process
-[mcp_servers.deepcurrent.env]
-DEEPCURRENT_API_KEY = "dc_..."
-DEEPCURRENT_API_URL = "https://api.deepcurrent.app"
-```
-
-**Hosted (Streamable HTTP) example:**
-
-```toml
-[mcp_servers.deepcurrent-cloud]
-url = "https://mcp.deepcurrent.app/mcp"
-# Prefer env var for the key in real setups:
-env_http_headers = { "X-API-Key" = "DEEPCURRENT_API_KEY" }
-```
-
-Set `DEEPCURRENT_API_KEY` in your environment (or use Codex’s supported secret mechanisms) so the header resolves.
-
-### OpenClaw (agent gateway)
-
-OpenClaw supports MCP via gateway config (often `clawdbot.json5`).
-
-- macOS: `~/.clawdbot/clawdbot.json5`
-- Linux: `~/.config/clawdbot/clawdbot.json5` (or `~/.clawdbot/clawdbot.json5`)
-- Windows: `%APPDATA%\clawdbot\clawdbot.json5`
-
-```json5
-{
-  mcp: {
-    servers: {
-      deepcurrent: {
-        command: "/absolute/path/to/deepcurrent-local-mcp",
-        args: [],
-        env: {
-          DEEPCURRENT_API_KEY: "dc_...",
-          DEEPCURRENT_API_URL: "https://api.deepcurrent.app",
-        },
-      },
-    },
-  },
-}
-```
-
-### Optional: local Streamable HTTP (debugging)
+## Optional: Local Streamable HTTP
 
 For local integration tests or a trusted LAN, you can run HTTP on loopback (do not expose to the public internet with a single shared `DEEPCURRENT_API_KEY`).
 
@@ -334,30 +295,30 @@ deepcurrent-local-mcp
 
 Point clients that support MCP over HTTP at `http://127.0.0.1:8009/mcp` (or your chosen path/port).
 
-## What local does not include (yet)
+## Hosted vs Local
 
-**Orchestrator bundle** tools that run as multi-stage Python flows in the **hosted remote** MCP only (`community_health_bundle`, `lead_pipeline_bundle`) are not shipped in this binary — they depend on the remote server’s in-process stages. `get_website_crawl_cost` is available locally (same backend as remote); `run_website_crawl` may be disabled in some remote builds. See `PRD Chat Phase 15 - Local MCP Parity and Code Mode Exploration.md` (**§4.3**, **§12.6 Parity matrix**). Intelligence, **growth**, credits, result-handle utilities, BYOD, and crawl **cost** are available here when an API key is configured.
+Hosted Cloud is the premium path for managed intelligence, credits, hosted bundle workflows, Telegram growth intelligence, and production result UX.
 
-## Tool provenance (official vs community)
+Local MCP is the open-source bring-your-own-data path. It gives you local connectors, local files, local execution, and an optional bridge to DeepCurrent Cloud when you configure `DEEPCURRENT_API_KEY`.
 
-Tool outputs include a `source` block so it is clear what ran where:
+Some multi-step workflows run only in hosted DeepCurrent because they depend on managed Cloud execution and result history. Local tools still include intelligence, growth, credits, result helpers, bring-your-own-data connectors, and crawl-cost tooling when an API key is configured.
 
-- `badge`: `official` | `certified` | `community`
-- `publisher`: who shipped the tool
-- `execution_mode`: `deepcurrent-cloud` | `byok-api` | `local`
+## Tool Trust Levels
 
-Design intent:
+Tool responses include a source label so users can tell whether a result came from DeepCurrent Cloud, a reviewed local connector, or a community connector.
+
+Trust model:
 
 - Community and certified connectors run locally and keep your data on your machine.
 - Official tools are a thin local wrapper that calls DeepCurrent Cloud for curated intelligence and paid unlocks.
 - Hosted deployments (if used) should expose official tools only (no arbitrary community code execution on DeepCurrent infrastructure).
 - Outputs are bounded by default (avoid dumping huge record sets into model context).
 
-### Badge ladder (community → certified → official)
+### Badge ladder
 
-- `community`: local-only, unreviewed BYOD/BYOK connectors
-- `certified`: local-only, reviewed connectors with stable schemas + bounded outputs (pipeline to official)
-- `official`: cloud-backed tools operated by DeepCurrent (eligible for paid credits + entitlements)
+- `community`: local-only, unreviewed connectors that use user-owned data or keys
+- `certified`: local-only, reviewed connectors with stable schemas and bounded outputs
+- `official`: Cloud-backed tools operated by DeepCurrent and eligible for paid credits
 
 ## Tool surface (current)
 
@@ -380,14 +341,14 @@ Official (cloud-backed when an API key is configured):
 - `fetch_result_artifact`
 - `get_website_crawl_cost`
 
-Community (BYOD):
+Community (bring-your-own-data):
 
 - `list_byod_connectors`
 - `run_byod_connector`
 
 ## How agents should use it
 
-- Start with `resolve` to validate the intent with a redacted preview.
+- Start with `resolve` to clarify the requested outcome before spending credits.
 - Use `preview_quote` / `quote` before any paid or proprietary action.
 - Use `execute` to get curated results.
 - Use `expand` only for the specific entities you want to action (contacts / network depth).
@@ -395,11 +356,20 @@ Community (BYOD):
 
 For plan details and pricing, use the Cloud landing page: `https://deepcurrent.app`.
 
+## Smithery
+
+Smithery is planned as a distribution path for users who want marketplace-style installation and configuration.
+
+- Hosted server path: publish `https://mcp.deepcurrent.app/mcp` once auth and scanning are ready for the Smithery flow.
+- Local stdio path: publish a desktop bundle when we want one-click local installation across supported desktop clients.
+
+Until then, use the hosted Cursor install button or the manual client configs above.
+
 ## Testing & QA
 
 - **`bash scripts/qa_mcp.sh`** — `compileall` on `src` plus `pytest`.
 - **`bash scripts/inspector_smoke.sh`** — one `tools/call` to `list_byod_connectors` via MCP Inspector **CLI** (uses an absolute path to the venv binary).
-- **Full Inspector / staging checklist (Phase 15):** in the `DeepCurrent-APIv1.0` tree, `PRDs/Phase 15/QA Chat Phase 15 - Local and Remote MCP.md` (§3 `tools/list`, env + `connect_deepcurrent_cloud`, sign-off). Use the **absolute** path to `.venv/bin/deepcurrent-local-mcp` in the UI or CLI.
+- **Manual MCP client QA:** run Inspector or your target client against the absolute path to `.venv/bin/deepcurrent-local-mcp`, then call `tools/list` and `connect_deepcurrent_cloud` if an API key is configured.
 
 ## Troubleshooting
 
@@ -416,9 +386,9 @@ export DEEPCURRENT_TELEMETRY=0
 
 Telemetry is **metadata only** (event name, tool name, status, latency). It never includes tool inputs/outputs or API keys.
 
-## Smithery (dev)
+## Smithery Dev
 
-- `smithery.yaml` (runtime: python)
+- `smithery.yaml` (Python runtime)
 - `pyproject.toml` `[tool.smithery]` server entrypoint
 
 ```bash
@@ -430,6 +400,10 @@ poetry run playground
 
 - Never paste your API key into chat messages or tool arguments.
 - Prefer MCP client `env` (or TOML `env` / `env_vars`) for secrets.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Ulmo-AI/DeepCurrent&type=Date)](https://www.star-history.com/#Ulmo-AI/DeepCurrent&Date)
 
 ## Contributing
 
