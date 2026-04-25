@@ -21,10 +21,9 @@ def register_growth_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="resolve_growth_outcome",
         description=(
-            "Growth orchestration: resolve a founder/company/contact enrichment goal into "
-            "a compact provider-backed plan. Use this first. Small plain-text company lists are fine. "
-            "For bulk structured data, prefer CSV-style inputs and inspect only the header row plus "
-            "1-3 sample rows to map fields before execution."
+            "Turn a lead generation or enrichment request into a concrete plan. Use this before quoting "
+            "or running. Small plain-text company lists are fine; for bulk data, inspect only the header "
+            "row and a few sample rows before mapping fields."
         ),
         tags={"growth", "resolve", "preview"},
     )
@@ -37,8 +36,8 @@ def register_growth_tools(mcp: FastMCP) -> None:
         input_assets: Annotated[
             dict | None,
             (
-                "Optional input assets. Example: {\"companies\": [...], \"contacts\": [...]} for provider-backed "
-                "enrichment. Map common aliases like name->company_name or website_url->website. If a CSV/header "
+                "Optional input assets such as companies or contacts. Map common aliases like "
+                "name->company_name or website_url->website. If a CSV/header "
                 "mapping is ambiguous, ask the user to confirm before quoting or running."
             ),
         ] = None,
@@ -60,7 +59,7 @@ def register_growth_tools(mcp: FastMCP) -> None:
         ] = None,
         icp_config: Annotated[
             dict | None,
-            "Optional ICP config to pass through to the provider boundary.",
+            "Optional target customer profile settings for lead selection.",
         ] = None,
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="resolve_growth_outcome", badge="official")
@@ -106,7 +105,7 @@ def register_growth_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="quote_growth_plan",
         description=(
-            "Growth orchestration: quote a resolved plan before any provider-backed execution. "
+            "Quote a resolved lead generation plan before execution. "
             "You MUST get explicit user confirmation before run_growth_plan."
         ),
         tags={"growth", "quote", "pricing"},
@@ -115,7 +114,7 @@ def register_growth_tools(mcp: FastMCP) -> None:
         goal_plan: Annotated[dict[str, Any], "The goal_plan returned by resolve_growth_outcome."],
         max_external_spend_credits: Annotated[
             int | None,
-            "Optional cap for provider-backed spend in credits.",
+            "Optional cap for third-party data spend in credits.",
         ] = None,
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="quote_growth_plan", badge="official")
@@ -162,7 +161,7 @@ def register_growth_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="run_growth_plan",
         description=(
-            "Growth orchestration: run an approved provider-backed growth plan. "
+            "Run an approved lead generation plan. "
             "ONLY call this after the user explicitly approves the quote."
         ),
         tags={"growth", "execute"},
@@ -172,7 +171,7 @@ def register_growth_tools(mcp: FastMCP) -> None:
         goal_plan: Annotated[dict[str, Any], "The normalized goal_plan returned by quote_growth_plan."],
         execution_mode: Annotated[
             str,
-            "Execution mode for the run. Keep the default 'internal_first'.",
+            "Execution mode for the run. Keep the default unless DeepCurrent support asks otherwise.",
         ] = "internal_first",
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="run_growth_plan", badge="official")
@@ -213,8 +212,7 @@ def register_growth_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="get_growth_plan_status",
         description=(
-            "Growth orchestration: fetch bounded progress, result handles, and artifact handles "
-            "for a previously started growth plan."
+            "Fetch progress, result handles, and artifact handles for a previously started lead generation run."
         ),
         tags={"growth", "status", "results"},
     )

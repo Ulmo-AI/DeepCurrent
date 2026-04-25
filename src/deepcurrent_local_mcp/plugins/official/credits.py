@@ -16,7 +16,7 @@ _SOURCE = {"badge": "official", "publisher": "DeepCurrent", "execution_mode": "d
 def register_credits_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="connect_deepcurrent_cloud",
-        description="(Official) Validate config and connect to DeepCurrent Cloud using X-API-Key.",
+        description="Check that your DeepCurrent credentials work and return current plan and credit details.",
         tags={"deepcurrent", "official", "auth", "credits"},
     )
     async def connect_deepcurrent_cloud() -> dict[str, Any]:
@@ -75,7 +75,7 @@ def register_credits_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="get_credit_status",
-        description="(Official) Fetch current subscription + credit balance from DeepCurrent Cloud.",
+        description="Fetch the current plan, subscription status, and credit balance.",
         tags={"deepcurrent", "official", "credits"},
     )
     async def get_credit_status() -> dict[str, Any]:
@@ -124,7 +124,7 @@ def register_credits_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="claim_growth_credits",
-        description="(Official) Claim daily expiring promotional growth credits.",
+        description="Claim any available promotional growth credits.",
         tags={"deepcurrent", "official", "credits", "faucet"},
     )
     async def claim_growth_credits() -> dict[str, Any]:

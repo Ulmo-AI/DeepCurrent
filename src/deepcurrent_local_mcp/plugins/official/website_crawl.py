@@ -28,10 +28,8 @@ def register_website_crawl_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="get_website_crawl_cost",
         description=(
-            "MANDATORY FIRST STEP: Calculates the credit cost for crawling a website. "
-            "You MUST show the estimated_cost to the user and wait for their explicit approval before proceeding. "
-            "DO NOT call run_website_crawl without user confirmation. "
-            "(Execution via run_website_crawl is only available in some remote MCP builds; this local server provides cost quote parity.)"
+            "Estimate the credit cost for crawling one or more websites. Show the estimated cost and get "
+            "explicit user approval before running any paid crawl."
         ),
         tags={"crawling", "cost-estimation"},
     )

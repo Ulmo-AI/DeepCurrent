@@ -42,12 +42,9 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="resolve_intelligence_intent",
         description=(
-            "(Official) Free redacted preview (aggregates only). "
-            "Use first for ambiguous investor, builder, named-company people, intro, or contact asks before quoting. "
-            "For named-company people discovery, this stays primary even if the request sounds operational, and "
-            "the backend response now carries coverage/fallback metadata for clients to follow. For broad "
-            "contact or intro asks, first clarify the target type and whether the user wants discovery, a warm "
-            "route, or direct contact unlock on an existing result."
+            "Preview available matches for a people or company intelligence request without charging credits. "
+            "Use this before quoting when the target or desired outcome is unclear. For broad contact or intro "
+            "requests, clarify who to find and whether the user wants discovery, warm intro paths, or contact unlocks."
         ),
         annotations=ToolAnnotations(
             title="Resolve Intelligence Intent",
@@ -65,11 +62,11 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         slots: Annotated[dict, "Slot values. Missing required slots return clarification questions."] = {},
         request_text: Annotated[
             str | None,
-            "Optional raw user request text to help backend intent resolution when slots are incomplete.",
+            "Optional raw user request text to help clarify incomplete slots.",
         ] = None,
         workflow_id: Annotated[
             str | None,
-            "Optional workflow contract ID when the caller already knows the intended workflow.",
+            "Optional workflow ID returned by a previous DeepCurrent response.",
         ] = None,
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="resolve_intelligence_intent", badge="official")
@@ -111,10 +108,10 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="preview_quote_intelligence_package",
         description=(
-            "(Official) Preferred: runs redacted preview plus quote in one step when the request is ready. "
-            "If the corpus has no matches, quote is omitted; use the growth tools for manual lead enrichment. "
-            "Quote responses can also include zero-credit context such as exact-result reuse or already-unlocked contacts. "
-            "For ambiguous investor or contact asks, clarify the target type and desired outcome before using this."
+            "Preview available matches and quote an intelligence request in one call. If there are no matches, "
+            "no quote is created; use growth tools for manual lead search instead. For ambiguous investor or "
+            "contact requests, clarify the target and desired outcome first. You MUST get explicit user "
+            "confirmation before execute or expand."
         ),
         annotations=ToolAnnotations(
             title="Preview And Quote Intelligence Package",
@@ -130,16 +127,16 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "Package ID to preview and quote. Use company-people-discovery-v1 first for named-company people or leadership discovery.",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots for quote)."],
-        output_fields: Annotated[list[str], "Requested Tier 1 output fields (for execute)."] = [],
+        output_fields: Annotated[list[str], "Requested fields for the base result."] = [],
         parent_result_id: Annotated[str | None, "When quoting an expansion, provide parent_result_id."] = None,
         expansion_scope: Annotated[dict | None, "Optional expansion scope."] = None,
         request_text: Annotated[
             str | None,
-            "Optional raw user request text to help backend slot normalization before preview/quote.",
+            "Optional raw user request text to help refine slots before preview/quote.",
         ] = None,
         workflow_id: Annotated[
             str | None,
-            "Optional workflow contract ID when the caller already knows the intended workflow.",
+            "Optional workflow ID returned by a previous DeepCurrent response.",
         ] = None,
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="preview_quote_intelligence_package", badge="official")
@@ -180,7 +177,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             )
             if skipped == "no_corpus_candidates":
                 return ok_result(
-                    text="Preview shows no corpus matches; quote not minted. For manual lead search, use resolve_growth_outcome then quote_growth_plan.",
+                    text="Preview shows no available matches; quote not created. For manual lead search, use resolve_growth_outcome then quote_growth_plan.",
                     structured=_payload_with_source(body),
                 )
             return ok_result(
@@ -203,7 +200,8 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="quote_intelligence_package",
         description=(
-            "(Official) Quote pricing (returns quote_token). Use after the intent is clear and before execute/expand."
+            "Create a quote for an already-clear intelligence request. Prefer preview_quote_intelligence_package "
+            "for new requests. You MUST get explicit user confirmation before execute or expand."
         ),
         annotations=ToolAnnotations(
             title="Quote Intelligence Package",
@@ -219,20 +217,20 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "Package ID to quote. Use company-people-discovery-v1 first for named-company people or leadership discovery.",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots)."],
-        output_fields: Annotated[list[str], "Tier 1 output fields (execute quotes)."] = [],
+        output_fields: Annotated[list[str], "Output fields for base-result quotes."] = [],
         parent_result_id: Annotated[str | None, "When quoting an expansion, provide parent_result_id."] = None,
         expansion_scope: Annotated[dict | None, "Optional expansion scope."] = None,
         request_text: Annotated[
             str | None,
-            "Optional raw user request text to help backend slot normalization before quoting.",
+            "Optional raw user request text to help refine slots before quoting.",
         ] = None,
         workflow_id: Annotated[
             str | None,
-            "Optional workflow contract ID when the caller already knows the intended workflow.",
+            "Optional workflow ID returned by a previous DeepCurrent response.",
         ] = None,
         anchor_quote_token: Annotated[
             str | None,
-            "Optional. quote_token from the last preview_quote when the follow-up is only confirmation (e.g. yes) or model slots are unreliable; backend pins execute slots from the prior preview.",
+            "Optional quote token from the last preview when the user's follow-up is only confirmation.",
         ] = None,
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="quote_intelligence_package", badge="official")
@@ -283,9 +281,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="execute_intelligence_package",
-        description=(
-            "(Official) Execute Tier 1 (Curated Discovery). Only use after explicit user confirmation of the quote."
-        ),
+        description="Run an approved intelligence discovery request. Only use after explicit user confirmation of the quote.",
         annotations=ToolAnnotations(
             title="Execute Intelligence Package",
             readOnlyHint=False,
@@ -297,7 +293,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def execute_intelligence_package(
         package_id: Annotated[str, "Package ID to execute (must match the quote payload)."],
         slots: Annotated[dict, "Slot values (must match the quote payload)."],
-        output_fields: Annotated[list[str], "Tier 1 output fields (must match the quote payload)."],
+        output_fields: Annotated[list[str], "Output fields that must match the quote payload."],
         quote_token: Annotated[str, "Quote token returned by quote_intelligence_package."],
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="execute_intelligence_package", badge="official")
@@ -339,11 +335,10 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="fetch_intelligence_result",
         description=(
-            "(Official) Fetch a saved intelligence result by result_id from "
-            "/api/v1/intelligence/results/{result_id}. Use this for result_ids returned by "
+            "Fetch a saved intelligence result by result_id. Use this for result_ids returned by "
             "execute_intelligence_package or expand_intelligence_package. Do not use "
             "fetch_result_summary for these intelligence result_ids. "
-            "Use when the user wants the saved result inspected in chat; records are truncated to avoid huge context."
+            "Use when the user wants the saved result inspected in chat; records are truncated to keep responses manageable."
         ),
         annotations=ToolAnnotations(
             title="Fetch Intelligence Result",
@@ -389,8 +384,8 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="expand_intelligence_package",
         description=(
-            "(Official) Expand Tier 2 or increase limit. "
-            "Usually use only after the user has reviewed a base result and explicitly approved the expansion quote."
+            "Unlock more details or increase the result limit for an existing intelligence result. "
+            "Use after the user has reviewed a base result and explicitly approved the expansion quote."
         ),
         annotations=ToolAnnotations(
             title="Expand Intelligence Package",

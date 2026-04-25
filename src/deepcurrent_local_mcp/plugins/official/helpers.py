@@ -18,8 +18,7 @@ def register_utility_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="fetch_result_summary",
         description=(
-            "Retrieve lightweight summary metadata for a stored orchestrator/download result "
-            "from /api/v1/results/{result_id}/summary. Do not use this for result_ids returned by "
+            "Retrieve lightweight summary metadata for a stored workflow result. Do not use this for result_ids returned by "
             "execute_intelligence_package or expand_intelligence_package; use fetch_intelligence_result for those."
         ),
         tags=_UTILITY,
@@ -88,7 +87,7 @@ def register_utility_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="fetch_result_artifact",
         description=(
-            "Retrieve a specific artifact from a stored orchestrator/download result in a streaming-friendly "
+            "Retrieve a specific artifact from a stored workflow result in a streaming-friendly "
             "format. Do not use this for intelligence result_ids; use fetch_intelligence_result for those."
         ),
         tags=_UTILITY,
