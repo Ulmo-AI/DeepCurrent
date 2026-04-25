@@ -25,6 +25,10 @@ playground = "smithery.cli.playground:main"
 # Smithery expects a function decorated with @smithery.server().
 server = "deepcurrent_local_mcp.smithery_server:create_server"
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

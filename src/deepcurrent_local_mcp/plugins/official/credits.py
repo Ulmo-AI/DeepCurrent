@@ -84,6 +84,13 @@ def register_credits_tools(mcp: FastMCP) -> None:
         try:
             client = require_cloud_client()
             status = await client.get_json("/api/v1/subscriptions/status")
+            quests: dict | None = None
+            try:
+                q = await client.get_json("/api/v1/quests/status")
+                if isinstance(q, dict):
+                    quests = q
+            except CloudAPIError:
+                pass
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
@@ -95,8 +102,12 @@ def register_credits_tools(mcp: FastMCP) -> None:
             )
             if isinstance(status, dict):
                 structured = {"source": _SOURCE, **status}
+                if quests is not None:
+                    structured["quests"] = quests
             else:
                 structured = {"source": _SOURCE, "credit_status": status}
+                if quests is not None:
+                    structured["quests"] = quests
             return ok_result(text="Fetched credit status.", structured=structured)
         except CloudAPIError as exc:
             telemetry.capture_background(
@@ -113,7 +124,7 @@ def register_credits_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="claim_growth_credits",
-        description="(Official) Claim daily expiring growth credits (Developer faucet).",
+        description="(Official) Claim daily expiring promotional growth credits.",
         tags={"deepcurrent", "official", "credits", "faucet"},
     )
     async def claim_growth_credits() -> dict[str, Any]:

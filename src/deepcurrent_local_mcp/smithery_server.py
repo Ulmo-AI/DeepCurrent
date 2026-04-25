@@ -5,7 +5,10 @@ from smithery.decorators import smithery
 
 from .plugins.community.byod import register_byod_tools
 from .plugins.official.credits import register_credits_tools
+from .plugins.official.growth import register_growth_tools
+from .plugins.official.helpers import register_utility_tools
 from .plugins.official.intelligence import register_intelligence_tools
+from .plugins.official.website_crawl import register_website_crawl_tools
 
 
 @smithery.server()
@@ -21,6 +24,9 @@ def create_server() -> FastMCP:
     mcp = FastMCP(name="DeepCurrent Local MCP")
     register_credits_tools(mcp)
     register_intelligence_tools(mcp)
+    register_growth_tools(mcp)
+    register_utility_tools(mcp)
+    register_website_crawl_tools(mcp)
     register_byod_tools(mcp)
     return mcp
 

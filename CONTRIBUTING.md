@@ -58,4 +58,11 @@ You can also run:
 
 ```bash
 python3 -m compileall -q src
+pytest -q
+# or, from repo root:
+bash scripts/qa_mcp.sh
 ```
+
+Product QA checklist (Cursor, hosted MCP, sign-off) lives in the **DeepCurrent-APIv1.0** repo: `PRDs/Phase 15/QA Chat Phase 15 - Local and Remote MCP.md`.
+
+MCP **Inspector** quick smoke (stdio + one tool call, no API key): `bash scripts/inspector_smoke.sh` (requires `npx` and a venv with `pip install -e .`).

@@ -20,6 +20,7 @@ env/
 # Secrets / local config
 .env
 *.local.json
+.cursor/mcp.json
 
 # OS
 .DS_Store
