@@ -23,7 +23,9 @@ def register_growth_tools(mcp: FastMCP) -> None:
         description=(
             "Turn a lead generation or enrichment request into a concrete plan. Use this before quoting "
             "or running. Small plain-text company lists are fine; for bulk data, inspect only the header "
-            "row and a few sample rows before mapping fields."
+            "row and a few sample rows before mapping fields. When the user names known companies or "
+            "projects, pass those names in goal_text/input_assets first; DeepCurrent will try internal "
+            "entity resolution before asking for domains or LinkedIn URLs."
         ),
         tags={"growth", "resolve", "preview"},
     )

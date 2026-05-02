@@ -42,9 +42,9 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="resolve_intelligence_intent",
         description=(
-            "Preview available matches for a people or company intelligence request without charging credits. "
+            "Preview available matches for people, company, investor, or wallet intelligence without charging credits. "
             "Use this before quoting when the target or desired outcome is unclear. For broad contact or intro "
-            "requests, clarify who to find and whether the user wants discovery, warm intro paths, or contact unlocks."
+            "requests, clarify who to find and whether the user wants discovery, warm intro paths, contact unlocks, or wallet identity lookup."
         ),
         annotations=ToolAnnotations(
             title="Resolve Intelligence Intent",
@@ -109,9 +109,17 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         name="preview_quote_intelligence_package",
         description=(
             "Preview available matches and quote an intelligence request in one call. If there are no matches, "
-            "no quote is created; use growth tools for manual lead search instead. For ambiguous investor or "
-            "contact requests, clarify the target and desired outcome first. You MUST get explicit user "
-            "confirmation before execute or expand."
+            "no quote is created unless the package supports provider-neutral enrichment; use growth tools for manual lead search instead. For ambiguous investor or "
+            "contact requests, clarify the target and desired outcome first. For short follow-up refinements "
+            "such as 'any fund' or changed result counts, pass anchor_quote_token from the previous quote so "
+            "the backend preserves the prior topic. For angel or individual investor requests, prefer "
+            "user-prospect-v1 unless the user explicitly asks for funds/firms. For co-investor or "
+            "network-depth asks around named funds, use vc-shortlist-v1 with request_text and, when known, "
+            "workflow_id='wf-investor-network-depth-v1'. For builders, developers, engineers, and hackathon "
+            "participants, pass request_text so backend routing can select builder-discovery-v1 or "
+            "hackathon-builder-v1 and apply broad corpus matching. For wallet identity or attribution, use "
+            "wallet-intelligence-v1 with query/address slots; the backend handles local lookup and external "
+            "wallet intelligence enrichment under the same package. You MUST get explicit user confirmation before execute or expand."
         ),
         annotations=ToolAnnotations(
             title="Preview And Quote Intelligence Package",
@@ -124,7 +132,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def preview_quote_intelligence_package(
         package_id: Annotated[
             str,
-            "Package ID to preview and quote. Use company-people-discovery-v1 first for named-company people or leadership discovery.",
+            "Package ID to preview and quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use wallet-intelligence-v1 for wallet identity lookup.",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots for quote)."],
         output_fields: Annotated[list[str], "Requested fields for the base result."] = [],
@@ -137,6 +145,10 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         workflow_id: Annotated[
             str | None,
             "Optional workflow ID returned by a previous DeepCurrent response.",
+        ] = None,
+        anchor_quote_token: Annotated[
+            str | None,
+            "Optional quote token from the last preview/quote for short confirmations or refinements; backend preserves the prior context and merges safe refinements like limit.",
         ] = None,
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="preview_quote_intelligence_package", badge="official")
@@ -154,6 +166,8 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
                 req["parent_result_id"] = parent_result_id
             if expansion_scope is not None:
                 req["expansion_scope"] = expansion_scope
+            if anchor_quote_token and str(anchor_quote_token).strip():
+                req["anchor_quote_token"] = str(anchor_quote_token).strip()
 
             raw = await client.post_json("/api/v1/intelligence/preview-quote", json_body=req)
             body = dict(raw) if isinstance(raw, dict) else {"payload": raw}
@@ -201,7 +215,14 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         name="quote_intelligence_package",
         description=(
             "Create a quote for an already-clear intelligence request. Prefer preview_quote_intelligence_package "
-            "for new requests. You MUST get explicit user confirmation before execute or expand."
+            "for new requests. Pass anchor_quote_token from the prior preview/quote when the user sends a short "
+            "follow-up refinement such as changing quantity or saying 'any fund', so backend preserves the prior "
+            "request context. For angel or individual investor requests, prefer user-prospect-v1 unless the user "
+            "explicitly asks for funds/firms. For co-investor or network-depth asks around named funds, use "
+            "vc-shortlist-v1 with request_text and, when known, workflow_id='wf-investor-network-depth-v1'. "
+            "For builders, developers, engineers, and hackathon participants, pass request_text so backend routing "
+            "can select builder-discovery-v1 or hackathon-builder-v1 and apply broad corpus matching. "
+            "You MUST get explicit user confirmation before execute or expand."
         ),
         annotations=ToolAnnotations(
             title="Quote Intelligence Package",
@@ -214,7 +235,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def quote_intelligence_package(
         package_id: Annotated[
             str,
-            "Package ID to quote. Use company-people-discovery-v1 first for named-company people or leadership discovery.",
+            "Package ID to quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use wallet-intelligence-v1 for wallet identity lookup.",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots)."],
         output_fields: Annotated[list[str], "Output fields for base-result quotes."] = [],
@@ -230,7 +251,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         ] = None,
         anchor_quote_token: Annotated[
             str | None,
-            "Optional quote token from the last preview when the user's follow-up is only confirmation.",
+            "Optional quote token from the last preview/quote for short confirmations or refinements; backend preserves the prior context and merges safe refinements like limit.",
         ] = None,
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="quote_intelligence_package", badge="official")
