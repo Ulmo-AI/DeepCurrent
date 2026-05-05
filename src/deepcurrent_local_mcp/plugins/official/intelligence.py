@@ -58,7 +58,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def resolve_intelligence_intent(
         package_id: Annotated[
             str,
-            "Supported package ID, including company-people-discovery-v1 for named-company people discovery and hackathon-builder-v1 for explicit hackathon/winner/bounty asks.",
+            "Supported package ID, including company-people-discovery-v1 for named-company people discovery. Use builder-discovery-v1 for builder, hackathon, winner, or bounty asks.",
         ],
         slots: Annotated[dict, "Slot values. Missing required slots return clarification questions."] = {},
         request_text: Annotated[
@@ -117,8 +117,8 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "user-prospect-v1 unless the user explicitly asks for funds/firms. For co-investor or "
             "network-depth asks around named funds, use vc-shortlist-v1 with request_text and, when known, "
             "workflow_id='wf-investor-network-depth-v1'. For builders, developers, engineers, and hackathon "
-            "participants, use builder-discovery-v1, or hackathon-builder-v1 for explicit hackathon/winner/bounty asks, "
-            "and pass request_text so backend routing can apply general or hackathon-heavy builder matching. For wallet identity or attribution, use "
+            "participants, use builder-discovery-v1 and pass request_text so backend routing can apply "
+            "general or hackathon-heavy builder matching. For wallet identity or attribution, use "
             "wallet-intelligence-v1 only with a concrete wallet address, concrete entity/label query, "
             "newline-separated wallet addresses, or parsed wallet CSV asset slots (wallet_rows/wallet_addresses). "
             "For generic prompts such as 'start wallet intelligence', call resolve_intelligence_intent or ask the user "
@@ -136,7 +136,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def preview_quote_intelligence_package(
         package_id: Annotated[
             str,
-            "Package ID to preview and quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use hackathon-builder-v1 for explicit hackathon/winner/bounty asks; use wallet-intelligence-v1 for wallet identity lookup.",
+            "Package ID to preview and quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use builder-discovery-v1 for builder, hackathon, winner, or bounty asks; use wallet-intelligence-v1 for wallet identity lookup.",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots for quote). For wallet-intelligence-v1, include address/query, wallet_rows, wallet_addresses, or an asset_handle from a wallet CSV."],
         output_fields: Annotated[list[str], "Requested fields for the base result."] = [],
@@ -224,7 +224,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "request context. For angel or individual investor requests, prefer user-prospect-v1 unless the user "
             "explicitly asks for funds/firms. For co-investor or network-depth asks around named funds, use "
             "vc-shortlist-v1 with request_text and, when known, workflow_id='wf-investor-network-depth-v1'. "
-            "For builders, developers, engineers, and hackathon participants, use builder-discovery-v1, or hackathon-builder-v1 for explicit hackathon/winner/bounty asks, and pass request_text "
+            "For builders, developers, engineers, and hackathon participants, use builder-discovery-v1 and pass request_text "
             "so backend routing can apply general or hackathon-heavy builder matching. "
             "For wallet identity or attribution, use wallet-intelligence-v1 only with a concrete wallet address, "
             "concrete entity/label query, newline-separated wallet addresses, or parsed wallet CSV asset slots; generic wallet-intelligence setup prompts should use resolve_intelligence_intent or ask for wallet input first. "
@@ -241,7 +241,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def quote_intelligence_package(
         package_id: Annotated[
             str,
-            "Package ID to quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use hackathon-builder-v1 for explicit hackathon/winner/bounty asks; use wallet-intelligence-v1 for wallet identity lookup.",
+            "Package ID to quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use builder-discovery-v1 for builder, hackathon, winner, or bounty asks; use wallet-intelligence-v1 for wallet identity lookup.",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots). For wallet-intelligence-v1, include address/query, wallet_rows, wallet_addresses, or an asset_handle from a wallet CSV."],
         output_fields: Annotated[list[str], "Output fields for base-result quotes."] = [],
