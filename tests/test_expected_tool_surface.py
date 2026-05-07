@@ -1,10 +1,11 @@
 """
-Assert the FastMCP server exposes the full Phase-15-expected tool surface (names only, no network).
+Assert the FastMCP server exposes the current official/local tool surface (names only, no network).
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 
 from fastmcp import FastMCP
 
@@ -26,7 +27,6 @@ EXPECTED_TOOL_NAMES: frozenset[str] = frozenset(
         "get_growth_plan_status",
         "fetch_result_summary",
         "fetch_result_artifact",
-        "get_website_crawl_cost",
         "list_byod_connectors",
         "run_byod_connector",
     }
@@ -49,6 +49,20 @@ def _get_tool_names(mcp: FastMCP) -> list[str]:
     return list(asyncio.run(_load()))
 
 
+def _get_tool_blob(mcp: FastMCP, name: str) -> str:
+
+    async def _load() -> str:
+        tools = await mcp.get_tools()
+        tool = tools[name] if isinstance(tools, dict) else next(t for t in tools if getattr(t, "name", None) == name)
+        if hasattr(tool, "model_dump"):
+            return json.dumps(tool.model_dump(), default=str)
+        if hasattr(tool, "dict"):
+            return json.dumps(tool.dict(), default=str)
+        return json.dumps(vars(tool), default=str)
+
+    return asyncio.run(_load())
+
+
 def test_main_mcp_exposes_all_expected_tool_names() -> None:
     from deepcurrent_local_mcp.main import mcp
 
@@ -69,3 +83,19 @@ def test_smithery_server_exposes_all_expected_tool_names() -> None:
     # Smithery is the same surface as main; extras would be a harness bug.
     extra = names - EXPECTED_TOOL_NAMES
     assert not extra, f"Unexpected extra tool names: {sorted(extra)}"
+
+
+def test_intelligence_tool_schema_exposes_phase_17_parity_fields() -> None:
+    from deepcurrent_local_mcp.main import mcp
+
+    execute_blob = _get_tool_blob(mcp, "execute_intelligence_package")
+    quote_blob = _get_tool_blob(mcp, "quote_intelligence_package")
+    preview_blob = _get_tool_blob(mcp, "preview_quote_intelligence_package")
+    expand_blob = _get_tool_blob(mcp, "expand_intelligence_package")
+
+    assert "workflow_id" in execute_blob
+    assert "anchor_quote_token" in quote_blob
+    assert "anchor_quote_token" in preview_blob
+    assert "exclude_previously_delivered" in quote_blob
+    assert "slots.limit" in preview_blob
+    assert "wallet_activity_snapshot" in expand_blob

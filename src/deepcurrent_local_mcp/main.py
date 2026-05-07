@@ -10,7 +10,6 @@ from .plugins.official.credits import register_credits_tools
 from .plugins.official.growth import register_growth_tools
 from .plugins.official.helpers import register_utility_tools
 from .plugins.official.intelligence import register_intelligence_tools
-from .plugins.official.website_crawl import register_website_crawl_tools
 from .runtime import get_telemetry
 
 
@@ -22,7 +21,6 @@ register_credits_tools(mcp)
 register_intelligence_tools(mcp)
 register_growth_tools(mcp)
 register_utility_tools(mcp)
-register_website_crawl_tools(mcp)
 register_byod_tools(mcp)
 
 
@@ -49,4 +47,3 @@ def main() -> None:
 
     # Default: STDIO transport for local MCP clients.
     mcp.run(transport="stdio")
-

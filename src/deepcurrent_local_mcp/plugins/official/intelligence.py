@@ -123,7 +123,10 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "newline-separated wallet addresses, or parsed wallet CSV asset slots (wallet_rows/wallet_addresses). "
             "For generic prompts such as 'start wallet intelligence', call resolve_intelligence_intent or ask the user "
             "to paste wallets/upload a wallet CSV before quoting. The backend handles local lookup and external "
-            "wallet intelligence enrichment under the same package. You MUST get explicit user confirmation before execute or expand."
+            "wallet intelligence enrichment under the same package. For custom result amounts, set slots.limit to the "
+            "requested count. For new-results-only follow-ups, set slots.exclude_previously_delivered=true and optionally "
+            "combine it with slots.limit. For expansion quotes, use parent_result_id and expansion_scope keyed by the "
+            "expansion type returned in available_expansions. You MUST get explicit user confirmation before execute or expand."
         ),
         annotations=ToolAnnotations(
             title="Preview And Quote Intelligence Package",
@@ -141,7 +144,10 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         slots: Annotated[dict, "Slot values (must satisfy required slots for quote). For wallet-intelligence-v1, include address/query, wallet_rows, wallet_addresses, or an asset_handle from a wallet CSV."],
         output_fields: Annotated[list[str], "Requested fields for the base result."] = [],
         parent_result_id: Annotated[str | None, "When quoting an expansion, provide parent_result_id."] = None,
-        expansion_scope: Annotated[dict | None, "Optional expansion scope."] = None,
+        expansion_scope: Annotated[
+            dict | None,
+            "Optional expansion scope keyed by expansion type, such as {'contact_unlock': {'selection': {'mode': 'top_n', 'count': 5}, 'contact_fields': ['email']}} or {'increase_limit': {'additional': 10}}.",
+        ] = None,
         request_text: Annotated[
             str | None,
             "Optional raw user request text to help refine slots before preview/quote.",
@@ -228,6 +234,9 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "so backend routing can apply general or hackathon-heavy builder matching. "
             "For wallet identity or attribution, use wallet-intelligence-v1 only with a concrete wallet address, "
             "concrete entity/label query, newline-separated wallet addresses, or parsed wallet CSV asset slots; generic wallet-intelligence setup prompts should use resolve_intelligence_intent or ask for wallet input first. "
+            "For custom result amounts, set slots.limit to the requested count. For new-results-only follow-ups, set "
+            "slots.exclude_previously_delivered=true and optionally combine it with slots.limit. For expansion quotes, "
+            "use parent_result_id and expansion_scope keyed by the expansion type returned in available_expansions. "
             "You MUST get explicit user confirmation before execute or expand."
         ),
         annotations=ToolAnnotations(
@@ -246,7 +255,10 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         slots: Annotated[dict, "Slot values (must satisfy required slots). For wallet-intelligence-v1, include address/query, wallet_rows, wallet_addresses, or an asset_handle from a wallet CSV."],
         output_fields: Annotated[list[str], "Output fields for base-result quotes."] = [],
         parent_result_id: Annotated[str | None, "When quoting an expansion, provide parent_result_id."] = None,
-        expansion_scope: Annotated[dict | None, "Optional expansion scope."] = None,
+        expansion_scope: Annotated[
+            dict | None,
+            "Optional expansion scope keyed by expansion type, such as {'show_people_at_entity': {'selection': {'mode': 'top_n', 'count': 1}, 'people_limit': 5}}.",
+        ] = None,
         request_text: Annotated[
             str | None,
             "Optional raw user request text to help refine slots before quoting.",
@@ -322,6 +334,10 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         slots: Annotated[dict, "Slot values (must match the quote payload)."],
         output_fields: Annotated[list[str], "Output fields that must match the quote payload."],
         quote_token: Annotated[str, "Quote token returned by quote_intelligence_package."],
+        workflow_id: Annotated[
+            str | None,
+            "Optional workflow ID returned by quote/preview. Pass it through when present so execute matches the quoted workflow.",
+        ] = None,
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="execute_intelligence_package", badge="official")
         telemetry = get_telemetry()
@@ -334,6 +350,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
                     "slots": slots or {},
                     "output_fields": output_fields or [],
                     "quote_token": quote_token,
+                    "workflow_id": workflow_id,
                 },
             )
             telemetry.capture_background(
@@ -412,7 +429,11 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         name="expand_intelligence_package",
         description=(
             "Unlock more details or increase the result limit for an existing intelligence result. "
-            "Use after the user has reviewed a base result and explicitly approved the expansion quote."
+            "Use after the user has reviewed a base result and explicitly approved the expansion quote. "
+            "Use the expansion type returned in available_expansions; common types include contact_unlock, "
+            "network_depth, increase_limit, show_people_at_entity, show_people_at_person_company, "
+            "show_company_or_fund_context, show_investor_network_context, show_investors_for_company, "
+            "show_portfolio_companies_for_investor, and wallet_activity_snapshot."
         ),
         annotations=ToolAnnotations(
             title="Expand Intelligence Package",
@@ -424,8 +445,14 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     )
     async def expand_intelligence_package(
         parent_result_id: Annotated[str, "Parent result UUID to expand."],
-        expansion_type: Annotated[str, "contact_unlock | network_depth | increase_limit"],
-        expansion_params: Annotated[dict, "Expansion parameters for the chosen expansion_type."] = {},
+        expansion_type: Annotated[
+            str,
+            "Expansion type returned by available_expansions, for example contact_unlock, increase_limit, show_people_at_entity, show_investors_for_company, or wallet_activity_snapshot.",
+        ],
+        expansion_params: Annotated[
+            dict,
+            "Expansion parameters for expansion_type. Examples: {'additional': 10}, {'selection': {'mode': 'top_n', 'count': 5}, 'contact_fields': ['email']}, or {'selection': {'mode': 'explicit_ids', 'ids': ['...']}}.",
+        ] = {},
         quote_token: Annotated[str, "Quote token returned by quote_intelligence_package for this expansion."] = "",
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="expand_intelligence_package", badge="official")
