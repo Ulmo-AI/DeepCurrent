@@ -7,7 +7,7 @@ from fastmcp import FastMCP
 
 from .plugins.community.byod import register_byod_tools
 from .plugins.official.credits import register_credits_tools
-from .plugins.official.growth import register_growth_tools
+from .plugins.official.deepdive import register_deepdive_tools
 from .plugins.official.helpers import register_utility_tools
 from .plugins.official.intelligence import register_intelligence_tools
 from .runtime import get_telemetry
@@ -19,7 +19,7 @@ MCP_SERVER_NAME = "DeepCurrent Local MCP"
 mcp = FastMCP(name=MCP_SERVER_NAME)
 register_credits_tools(mcp)
 register_intelligence_tools(mcp)
-register_growth_tools(mcp)
+register_deepdive_tools(mcp)
 register_utility_tools(mcp)
 register_byod_tools(mcp)
 

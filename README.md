@@ -18,7 +18,7 @@ This repo contains the open-source **local MCP server** for bring-your-own-data 
 - **Telegram-native growth intelligence:** find prospects in target groups, monitor pain and intent, detect competitor displacement, and expand KOL audiences from high-signal communities.
 - **Evidence-backed lead discovery:** rank people, projects, builders, KOLs, funds, and communities with fit reasons, confidence, evidence snippets, and recommended next actions.
 - **Web3 research workflows:** enrich companies, projects, people, wallets, funding context, ecosystem roles, and relationship paths from DeepCurrent intelligence surfaces.
-- **Growth execution planning:** resolve an outcome, quote the work, run the plan, and retrieve structured results through one agent-friendly tool chain.
+- **DeepDive execution planning:** resolve an outcome, quote the work, run the plan, and retrieve structured results through one agent-friendly tool chain.
 - **Local bring-your-own-data connectors:** keep user-owned files, keys, and community connectors on your machine while still using Cloud tools when you provide an API key.
 
 DeepCurrent does not dump raw social data into a model. It returns transformed, decision-ready outputs: ranked candidates, signals, evidence, confidence, risk flags, and recommended next steps such as observe, enrich, watchlist, human review, or outreach handoff.
@@ -300,7 +300,7 @@ Hosted Cloud is the premium path for managed intelligence, credits, hosted bundl
 
 Local MCP is the open-source bring-your-own-data path. It gives you local connectors, local files, local execution, and an optional bridge to DeepCurrent Cloud when you configure `DEEPCURRENT_API_KEY`.
 
-Some multi-step workflows run only in hosted DeepCurrent because they depend on managed Cloud execution and result history. Local tools still include intelligence, growth, credits, result helpers, and bring-your-own-data connectors when an API key is configured.
+Some multi-step workflows run only in hosted DeepCurrent because they depend on managed Cloud execution and result history. Local tools still include intelligence, DeepDive, credits, result helpers, and bring-your-own-data connectors when an API key is configured.
 
 ## Tool Trust Levels
 
@@ -326,10 +326,10 @@ Official (cloud-backed when an API key is configured):
 - `connect_deepcurrent_cloud`
 - `get_credit_status`
 - `claim_growth_credits`
-- `resolve_growth_outcome`
-- `quote_growth_plan`
-- `run_growth_plan`
-- `get_growth_plan_status`
+- `resolve_deepdive_outcome`
+- `quote_deepdive_plan`
+- `run_deepdive_plan`
+- `get_deepdive_plan_status`
 - `resolve_intelligence_intent`
 - `preview_quote_intelligence_package`
 - `quote_intelligence_package`
@@ -352,7 +352,7 @@ Community (bring-your-own-data):
 - To request a custom intelligence amount, quote again with `slots.limit` set to the requested count. When refining a previous quote, pass `anchor_quote_token` so the backend preserves the prior context.
 - To request new results only, quote again with `slots.exclude_previously_delivered = true`; combine it with `slots.limit` when the user asks for a specific new-result count.
 - Use `expand` only after quoting an expansion. Pass the `expansion_type` returned by the result's available expansions, such as `contact_unlock`, `increase_limit`, `show_people_at_entity`, `show_investors_for_company`, or `wallet_activity_snapshot`.
-- For lead enrichment and growth workflows, use the growth tools (`resolve_growth_outcome` → `quote_growth_plan` → `run_growth_plan`, then `get_growth_plan_status` as needed).
+- For lead enrichment and DeepDive workflows, use the DeepDive tools (`resolve_deepdive_outcome` → `quote_deepdive_plan` → `run_deepdive_plan`, then `get_deepdive_plan_status` as needed).
 
 For plan details and pricing, use the Cloud landing page: `https://deepcurrent.app`.
 

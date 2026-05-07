@@ -17,9 +17,9 @@ def _payload_with_source(payload: Any) -> dict[str, Any]:
     return {"source": _SOURCE, "payload": payload}
 
 
-def register_growth_tools(mcp: FastMCP) -> None:
+def register_deepdive_tools(mcp: FastMCP) -> None:
     @mcp.tool(
-        name="resolve_growth_outcome",
+        name="resolve_deepdive_outcome",
         description=(
             "Turn a lead generation or enrichment request into a concrete plan. Use this before quoting "
             "or running. Small plain-text company lists are fine; for bulk data, inspect only the header "
@@ -27,9 +27,9 @@ def register_growth_tools(mcp: FastMCP) -> None:
             "projects, pass those names in goal_text/input_assets first; DeepCurrent will try internal "
             "entity resolution before asking for domains or LinkedIn URLs."
         ),
-        tags={"growth", "resolve", "preview"},
+        tags={"deepdive", "resolve", "preview"},
     )
-    async def resolve_growth_outcome(
+    async def resolve_deepdive_outcome(
         goal_text: Annotated[str, "Describe the desired outcome, such as finding founders, enriching leads, or verifying emails."],
         constraints: Annotated[
             dict | None,
@@ -57,19 +57,19 @@ def register_growth_tools(mcp: FastMCP) -> None:
         ] = None,
         asset_handle: Annotated[
             str | dict[str, Any] | None,
-            "Optional uploaded asset reference or inline asset payload for future file-based growth flows.",
+            "Optional uploaded asset reference or inline asset payload for future file-based DeepDive flows.",
         ] = None,
         icp_config: Annotated[
             dict | None,
             "Optional target customer profile settings for lead selection.",
         ] = None,
     ) -> dict[str, Any]:
-        timing = start_tool_timing(tool_name="resolve_growth_outcome", badge="official")
+        timing = start_tool_timing(tool_name="resolve_deepdive_outcome", badge="official")
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
             payload = await client.post_json(
-                "/api/v1/growth/resolve",
+                "/api/v1/deepdive/resolve",
                 json_body={
                     "goal_text": goal_text,
                     "constraints": constraints or {},
@@ -84,18 +84,18 @@ def register_growth_tools(mcp: FastMCP) -> None:
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
-                    "tool_name": "resolve_growth_outcome",
+                    "tool_name": "resolve_deepdive_outcome",
                     "badge": "official",
                     "status": "success",
                     "latency_ms": finish_tool_timing(timing),
                 },
             )
-            return ok_result(text="Resolved growth outcome.", structured=_payload_with_source(payload))
+            return ok_result(text="Resolved DeepDive outcome.", structured=_payload_with_source(payload))
         except CloudAPIError as exc:
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
-                    "tool_name": "resolve_growth_outcome",
+                    "tool_name": "resolve_deepdive_outcome",
                     "badge": "official",
                     "status": "error",
                     "http_status": exc.status_code,
@@ -105,26 +105,26 @@ def register_growth_tools(mcp: FastMCP) -> None:
             return error_result(status_code=exc.status_code or 0, message=exc.message, body=exc.body)
 
     @mcp.tool(
-        name="quote_growth_plan",
+        name="quote_deepdive_plan",
         description=(
             "Quote a resolved lead generation plan before execution. "
-            "You MUST get explicit user confirmation before run_growth_plan."
+            "You MUST get explicit user confirmation before run_deepdive_plan."
         ),
-        tags={"growth", "quote", "pricing"},
+        tags={"deepdive", "quote", "pricing"},
     )
-    async def quote_growth_plan(
-        goal_plan: Annotated[dict[str, Any], "The goal_plan returned by resolve_growth_outcome."],
+    async def quote_deepdive_plan(
+        goal_plan: Annotated[dict[str, Any], "The goal_plan returned by resolve_deepdive_outcome."],
         max_external_spend_credits: Annotated[
             int | None,
             "Optional cap for third-party data spend in credits.",
         ] = None,
     ) -> dict[str, Any]:
-        timing = start_tool_timing(tool_name="quote_growth_plan", badge="official")
+        timing = start_tool_timing(tool_name="quote_deepdive_plan", badge="official")
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
             body = await client.post_json(
-                "/api/v1/growth/quote",
+                "/api/v1/deepdive/quote",
                 json_body={
                     "goal_plan": goal_plan,
                     "max_external_spend_credits": max_external_spend_credits,
@@ -133,14 +133,14 @@ def register_growth_tools(mcp: FastMCP) -> None:
             b = dict(body) if isinstance(body, dict) else {"payload": body}
             credits = b.get("credits_total")
             text = (
-                f"Quoted {credits} credits for the growth plan."
+                f"Quoted {credits} credits for the DeepDive plan."
                 if credits is not None
-                else "Quoted growth plan."
+                else "Quoted DeepDive plan."
             )
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
-                    "tool_name": "quote_growth_plan",
+                    "tool_name": "quote_deepdive_plan",
                     "badge": "official",
                     "status": "success",
                     "latency_ms": finish_tool_timing(timing),
@@ -151,7 +151,7 @@ def register_growth_tools(mcp: FastMCP) -> None:
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
-                    "tool_name": "quote_growth_plan",
+                    "tool_name": "quote_deepdive_plan",
                     "badge": "official",
                     "status": "error",
                     "http_status": exc.status_code,
@@ -161,27 +161,27 @@ def register_growth_tools(mcp: FastMCP) -> None:
             return error_result(status_code=exc.status_code or 0, message=exc.message, body=exc.body)
 
     @mcp.tool(
-        name="run_growth_plan",
+        name="run_deepdive_plan",
         description=(
             "Run an approved lead generation plan. "
             "ONLY call this after the user explicitly approves the quote."
         ),
-        tags={"growth", "execute"},
+        tags={"deepdive", "execute"},
     )
-    async def run_growth_plan(
-        quote_token: Annotated[str, "Quote token returned by quote_growth_plan."],
-        goal_plan: Annotated[dict[str, Any], "The normalized goal_plan returned by quote_growth_plan."],
+    async def run_deepdive_plan(
+        quote_token: Annotated[str, "Quote token returned by quote_deepdive_plan."],
+        goal_plan: Annotated[dict[str, Any], "The normalized goal_plan returned by quote_deepdive_plan."],
         execution_mode: Annotated[
             str,
             "Execution mode for the run. Keep the default unless DeepCurrent support asks otherwise.",
         ] = "internal_first",
     ) -> dict[str, Any]:
-        timing = start_tool_timing(tool_name="run_growth_plan", badge="official")
+        timing = start_tool_timing(tool_name="run_deepdive_plan", badge="official")
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
             payload = await client.post_json(
-                "/api/v1/growth/run",
+                "/api/v1/deepdive/run",
                 json_body={
                     "quote_token": quote_token,
                     "goal_plan": goal_plan,
@@ -191,18 +191,18 @@ def register_growth_tools(mcp: FastMCP) -> None:
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
-                    "tool_name": "run_growth_plan",
+                    "tool_name": "run_deepdive_plan",
                     "badge": "official",
                     "status": "success",
                     "latency_ms": finish_tool_timing(timing),
                 },
             )
-            return ok_result(text="Started growth plan execution.", structured=_payload_with_source(payload))
+            return ok_result(text="Started DeepDive plan execution.", structured=_payload_with_source(payload))
         except CloudAPIError as exc:
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
-                    "tool_name": "run_growth_plan",
+                    "tool_name": "run_deepdive_plan",
                     "badge": "official",
                     "status": "error",
                     "http_status": exc.status_code,
@@ -212,35 +212,35 @@ def register_growth_tools(mcp: FastMCP) -> None:
             return error_result(status_code=exc.status_code or 0, message=exc.message, body=exc.body)
 
     @mcp.tool(
-        name="get_growth_plan_status",
+        name="get_deepdive_plan_status",
         description=(
             "Fetch progress, result handles, and artifact handles for a previously started lead generation run."
         ),
-        tags={"growth", "status", "results"},
+        tags={"deepdive", "status", "results"},
     )
-    async def get_growth_plan_status(
-        run_id: Annotated[str, "Run identifier returned by run_growth_plan."],
+    async def get_deepdive_plan_status(
+        run_id: Annotated[str, "Run identifier returned by run_deepdive_plan."],
     ) -> dict[str, Any]:
-        timing = start_tool_timing(tool_name="get_growth_plan_status", badge="official")
+        timing = start_tool_timing(tool_name="get_deepdive_plan_status", badge="official")
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
-            payload = await client.get_json(f"/api/v1/growth/runs/{run_id}")
+            payload = await client.get_json(f"/api/v1/deepdive/runs/{run_id}")
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
-                    "tool_name": "get_growth_plan_status",
+                    "tool_name": "get_deepdive_plan_status",
                     "badge": "official",
                     "status": "success",
                     "latency_ms": finish_tool_timing(timing),
                 },
             )
-            return ok_result(text="Fetched growth plan status.", structured=_payload_with_source(payload))
+            return ok_result(text="Fetched DeepDive plan status.", structured=_payload_with_source(payload))
         except CloudAPIError as exc:
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
-                    "tool_name": "get_growth_plan_status",
+                    "tool_name": "get_deepdive_plan_status",
                     "badge": "official",
                     "status": "error",
                     "http_status": exc.status_code,

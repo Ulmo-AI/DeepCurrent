@@ -1,1 +1,1 @@
-__all__ = ["credits", "growth", "helpers", "intelligence"]
+__all__ = ["credits", "deepdive", "helpers", "intelligence"]

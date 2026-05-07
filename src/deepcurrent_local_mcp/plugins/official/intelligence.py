@@ -110,7 +110,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         name="preview_quote_intelligence_package",
         description=(
             "Preview available matches and quote an intelligence request in one call. If there are no matches, "
-            "no quote is created unless the package supports provider-neutral enrichment; use growth tools for manual lead search instead. For ambiguous investor or "
+            "no quote is created unless the package supports provider-neutral enrichment; use DeepDive tools for manual lead search instead. For ambiguous investor or "
             "contact requests, clarify the target and desired outcome first. For short follow-up refinements "
             "such as 'any fund' or changed result counts, pass anchor_quote_token from the previous quote so "
             "the backend preserves the prior topic. For angel or individual investor requests, prefer "
@@ -201,7 +201,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             )
             if skipped == "no_corpus_candidates":
                 return ok_result(
-                    text="Preview shows no available matches; quote not created. For manual lead search, use resolve_growth_outcome then quote_growth_plan.",
+                    text="Preview shows no available matches; quote not created. For manual lead search, use resolve_deepdive_outcome then quote_deepdive_plan.",
                     structured=_payload_with_source(body),
                 )
             return ok_result(
