@@ -5,6 +5,7 @@ from typing import Annotated, Any
 from fastmcp import FastMCP
 
 from ...cloud import CloudAPIError
+from ...policy import require_bounded_payload
 from ...runtime import error_result, get_telemetry, ok_result, require_cloud_client
 from ...telemetry import finish_tool_timing, start_tool_timing
 
@@ -68,18 +69,20 @@ def register_deepdive_tools(mcp: FastMCP) -> None:
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
+            request = {
+                "goal_text": goal_text,
+                "constraints": constraints or {},
+                "input_assets": input_assets or {},
+                "input_text": input_text,
+                "input_table": input_table or [],
+                "column_mapping": column_mapping or {},
+                "asset_handle": asset_handle,
+                "icp_config": icp_config,
+            }
+            require_bounded_payload(request)
             payload = await client.post_json(
                 "/api/v1/deepdive/resolve",
-                json_body={
-                    "goal_text": goal_text,
-                    "constraints": constraints or {},
-                    "input_assets": input_assets or {},
-                    "input_text": input_text,
-                    "input_table": input_table or [],
-                    "column_mapping": column_mapping or {},
-                    "asset_handle": asset_handle,
-                    "icp_config": icp_config,
-                },
+                json_body=request,
             )
             telemetry.capture_background(
                 event="tool_executed",
@@ -123,12 +126,14 @@ def register_deepdive_tools(mcp: FastMCP) -> None:
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
+            request = {
+                "goal_plan": goal_plan,
+                "max_external_spend_credits": max_external_spend_credits,
+            }
+            require_bounded_payload(request)
             body = await client.post_json(
                 "/api/v1/deepdive/quote",
-                json_body={
-                    "goal_plan": goal_plan,
-                    "max_external_spend_credits": max_external_spend_credits,
-                },
+                json_body=request,
             )
             b = dict(body) if isinstance(body, dict) else {"payload": body}
             credits = b.get("credits_total")
@@ -180,13 +185,15 @@ def register_deepdive_tools(mcp: FastMCP) -> None:
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
+            request = {
+                "quote_token": quote_token,
+                "goal_plan": goal_plan,
+                "execution_mode": execution_mode,
+            }
+            require_bounded_payload(request)
             payload = await client.post_json(
                 "/api/v1/deepdive/run",
-                json_body={
-                    "quote_token": quote_token,
-                    "goal_plan": goal_plan,
-                    "execution_mode": execution_mode,
-                },
+                json_body=request,
             )
             telemetry.capture_background(
                 event="tool_executed",

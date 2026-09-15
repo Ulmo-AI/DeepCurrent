@@ -11,6 +11,9 @@ class CloudAPIError(Exception):
     status_code: int
     message: str
     body: Any | None = None
+    code: str | None = None
+    retry_after_seconds: int | None = None
+    request_id: str | None = None
 
     def __str__(self) -> str:  # pragma: no cover
         return f"DeepCurrent Cloud error ({self.status_code}): {self.message}"
@@ -50,19 +53,48 @@ class DeepCurrentCloudClient:
             body: Any | None = None
             try:
                 body = resp.json()
-                # FastAPI style errors commonly include {"detail": "..."}.
-                if isinstance(body, dict) and isinstance(body.get("detail"), str):
-                    message = body["detail"]
-            except Exception:
+                # Preserve structured FastAPI errors while surfacing their human message.
+                if isinstance(body, dict):
+                    detail = body.get("detail")
+                    if isinstance(detail, str):
+                        message = detail
+                    elif isinstance(detail, dict) and isinstance(detail.get("message"), str):
+                        message = detail["message"]
+            except ValueError:
                 body = None
-            raise CloudAPIError(status_code=resp.status_code, message=message, body=body)
+            detail = body.get("detail") if isinstance(body, dict) else None
+            code = detail.get("code") if isinstance(detail, dict) else None
+            retry_after = (
+                detail.get("retry_after_seconds") if isinstance(detail, dict) else None
+            )
+            if not isinstance(retry_after, int):
+                raw_retry = resp.headers.get("retry-after")
+                retry_after = int(raw_retry) if raw_retry and raw_retry.isdigit() else None
+            request_id = resp.headers.get("x-request-id")
+            if isinstance(body, dict):
+                body = {
+                    **body,
+                    "_transport": {
+                        "code": code if isinstance(code, str) else None,
+                        "retry_after_seconds": retry_after,
+                        "request_id": request_id,
+                    },
+                }
+            raise CloudAPIError(
+                status_code=resp.status_code,
+                message=message,
+                body=body,
+                code=code if isinstance(code, str) else None,
+                retry_after_seconds=retry_after,
+                request_id=request_id,
+            )
 
         # Prefer JSON, but don't crash if the API returns empty bodies.
         if not resp.content:
             return None
         try:
             return resp.json()
-        except Exception:
+        except ValueError:
             return resp.text
 
     async def get_json(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
@@ -70,4 +102,3 @@ class DeepCurrentCloudClient:
 
     async def post_json(self, path: str, *, json_body: dict[str, Any] | None = None) -> Any:
         return await self.request_json("POST", path, json_body=json_body)
-
