@@ -5,7 +5,11 @@ from typing import Annotated, Any
 from fastmcp import FastMCP
 
 from ...cloud import CloudAPIError
-from ...policy import require_bounded_payload
+from ...policy import (
+    MAX_RECORDS_PER_CALL,
+    bound_output,
+    require_bounded_payload,
+)
 from ...runtime import error_result, get_telemetry, require_cloud_client
 from ...telemetry import finish_tool_timing, start_tool_timing
 
@@ -13,27 +17,6 @@ from ...telemetry import finish_tool_timing, start_tool_timing
 _UTILITY = {"utility"}
 
 _SOURCE = {"badge": "official", "publisher": "DeepCurrent", "execution_mode": "deepcurrent-cloud"}
-_MAX_OUTPUT_ITEMS = 25
-_MAX_OUTPUT_FIELDS = 50
-
-
-def _bound_output(value: Any, *, depth: int = 0) -> Any:
-    """Bound nested cloud artifacts before returning them through MCP."""
-
-    if depth >= 6:
-        return "[truncated: nesting limit]"
-    if isinstance(value, list):
-        return [_bound_output(item, depth=depth + 1) for item in value[:_MAX_OUTPUT_ITEMS]]
-    if isinstance(value, dict):
-        return {
-            str(key): _bound_output(item, depth=depth + 1)
-            for key, item in list(value.items())[:_MAX_OUTPUT_FIELDS]
-        }
-    if isinstance(value, str) and len(value) > 50_000:
-        return f"{value[:50_000]}\n[truncated]"
-    return value
-
-
 def register_utility_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="fetch_result_summary",
@@ -79,9 +62,9 @@ def register_utility_tools(mcp: FastMCP) -> None:
                 "source": _SOURCE,
                 "status": body.get("status", "success"),
                 "result_id": result_id,
-                "summary": _bound_output(body.get("summary", {})),
-                "artifacts": _bound_output(body.get("artifacts", [])),
-                "downloads": _bound_output(body.get("downloads", [])),
+                "summary": bound_output(body.get("summary", {})),
+                "artifacts": bound_output(body.get("artifacts", [])),
+                "downloads": bound_output(body.get("downloads", [])),
             }
         except CloudAPIError as exc:
             telemetry.capture_background(
@@ -132,7 +115,7 @@ def register_utility_tools(mcp: FastMCP) -> None:
             client = require_cloud_client()
             body = await client.get_json(
                 f"/api/v1/results/{result_id}/artifacts/{artifact_id}",
-                params={"limit": _MAX_OUTPUT_ITEMS, "offset": 0},
+                params={"limit": MAX_RECORDS_PER_CALL, "offset": 0},
             )
             telemetry.capture_background(
                 event="tool_executed",
@@ -152,7 +135,7 @@ def register_utility_tools(mcp: FastMCP) -> None:
                 "source": _SOURCE,
                 "status": "success",
                 "result_id": result_id,
-                "artifact": _bound_output(body.get("artifact")),
+                "artifact": bound_output(body.get("artifact")),
             }
         except CloudAPIError as exc:
             telemetry.capture_background(
