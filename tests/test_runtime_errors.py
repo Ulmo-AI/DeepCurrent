@@ -7,14 +7,14 @@ def test_error_result_exposes_structured_quota_metadata() -> None:
         message="Allowance reached.",
         body={
             "detail": {
-                "code": "corpus_distinct_record_limit_exceeded",
+                "code": "distinct_record_limit_reached",
                 "retry_after_seconds": 30,
                 "resets_at": "2026-10-01T00:00:00Z",
             }
         },
     )
 
-    assert result["error"]["code"] == "corpus_distinct_record_limit_exceeded"
+    assert result["error"]["code"] == "distinct_record_limit_reached"
     assert result["error"]["retry_after_seconds"] == 30
     assert result["error"]["resets_at"] == "2026-10-01T00:00:00Z"
 
