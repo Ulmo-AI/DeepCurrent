@@ -13,7 +13,10 @@ from fastmcp import FastMCP
 EXPECTED_TOOL_NAMES: frozenset[str] = frozenset(
     {
         "connect_deepcurrent_cloud",
+        "delete_saved_search",
+        "get_deepcurrent_capabilities",
         "get_credit_status",
+        "get_lead_search_schema",
         "claim_growth_credits",
         "resolve_intelligence_intent",
         "preview_quote_intelligence_package",
@@ -27,6 +30,9 @@ EXPECTED_TOOL_NAMES: frozenset[str] = frozenset(
         "get_deepdive_plan_status",
         "fetch_result_summary",
         "fetch_result_artifact",
+        "list_saved_searches",
+        "save_lead_search",
+        "search_leads",
         "list_byod_connectors",
         "run_byod_connector",
     }
@@ -36,9 +42,7 @@ EXPECTED_TOOL_NAMES: frozenset[str] = frozenset(
 def _get_tool_names(mcp: FastMCP) -> list[str]:
 
     async def _load() -> list[str]:
-        tools = await mcp.get_tools()
-        if isinstance(tools, dict):
-            return list(tools.keys())
+        tools = await mcp.list_tools()
         out: list[str] = []
         for t in tools:
             n = getattr(t, "name", None)
@@ -52,8 +56,8 @@ def _get_tool_names(mcp: FastMCP) -> list[str]:
 def _get_tool_blob(mcp: FastMCP, name: str) -> str:
 
     async def _load() -> str:
-        tools = await mcp.get_tools()
-        tool = tools[name] if isinstance(tools, dict) else next(t for t in tools if getattr(t, "name", None) == name)
+        tools = await mcp.list_tools()
+        tool = next(t for t in tools if getattr(t, "name", None) == name)
         if hasattr(tool, "model_dump"):
             return json.dumps(tool.model_dump(), default=str)
         if hasattr(tool, "dict"):
@@ -71,6 +75,14 @@ def test_main_mcp_exposes_all_expected_tool_names() -> None:
     extra = names - EXPECTED_TOOL_NAMES
     assert not missing, f"Missing tool names: {sorted(missing)}"
     assert not extra, f"Unexpected extra tool names: {sorted(extra)}"
+
+
+def test_local_servers_advertise_runtime_release_version() -> None:
+    from deepcurrent_local_mcp.main import mcp
+    from deepcurrent_local_mcp.smithery_server import create_server
+
+    assert str(mcp.version) == "0.2.0"
+    assert str(create_server().version) == "0.2.0"
 
 
 def test_smithery_server_exposes_all_expected_tool_names() -> None:

@@ -3,11 +3,13 @@ from __future__ import annotations
 from fastmcp import FastMCP
 from smithery.decorators import smithery
 
+from . import __version__
 from .plugins.community.byod import register_byod_tools
 from .plugins.official.credits import register_credits_tools
 from .plugins.official.deepdive import register_deepdive_tools
 from .plugins.official.helpers import register_utility_tools
 from .plugins.official.intelligence import register_intelligence_tools
+from .plugins.official.lead_search import register_lead_search_tools
 
 
 @smithery.server()
@@ -20,9 +22,10 @@ def create_server() -> FastMCP:
 
     Note: DeepCurrent Cloud tools require an API key at call time. BYOD tools work without it.
     """
-    mcp = FastMCP(name="DeepCurrent Local MCP")
+    mcp = FastMCP(name="DeepCurrent Local MCP", version=__version__)
     register_credits_tools(mcp)
     register_intelligence_tools(mcp)
+    register_lead_search_tools(mcp)
     register_deepdive_tools(mcp)
     register_utility_tools(mcp)
     register_byod_tools(mcp)

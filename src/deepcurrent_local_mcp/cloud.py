@@ -102,3 +102,6 @@ class DeepCurrentCloudClient:
 
     async def post_json(self, path: str, *, json_body: dict[str, Any] | None = None) -> Any:
         return await self.request_json("POST", path, json_body=json_body)
+
+    async def delete_json(self, path: str) -> Any:
+        return await self.request_json("DELETE", path)

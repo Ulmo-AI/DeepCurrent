@@ -56,9 +56,12 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def resolve_intelligence_intent(
         package_id: Annotated[
             str,
-            "Supported package ID, including company-people-discovery-v1 for named-company people discovery. Use builder-discovery-v1 for builder, hackathon, winner, or bounty asks.",
+            "Package ID to resolve. One of: vc-shortlist-v1, builder-discovery-v1, company-people-discovery-v1, warm-intro-paths-v1, kol-discovery-v1, user-prospect-v1, wallet-intelligence-v1",
         ],
-        slots: Annotated[dict | None, "Slot values. Missing required slots return clarification questions."] = None,
+        slots: Annotated[
+            dict | None,
+            "Slot values for this package. If required slots are missing, the response includes clarification questions.",
+        ] = None,
         request_text: Annotated[
             str | None,
             "Optional raw user request text to help clarify incomplete slots.",
@@ -139,11 +142,17 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def preview_quote_intelligence_package(
         package_id: Annotated[
             str,
-            "Package ID to preview and quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use builder-discovery-v1 for builder, hackathon, winner, or bounty asks; use wallet-intelligence-v1 for wallet identity lookup.",
+            "Package ID. One of: vc-shortlist-v1, builder-discovery-v1, company-people-discovery-v1, warm-intro-paths-v1, kol-discovery-v1, user-prospect-v1, wallet-intelligence-v1",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots for quote). For wallet-intelligence-v1, include address/query, wallet_rows, wallet_addresses, or an asset_handle from a wallet CSV."],
-        output_fields: Annotated[list[str] | None, "Requested fields for the base result."] = None,
-        parent_result_id: Annotated[str | None, "When quoting an expansion, provide parent_result_id."] = None,
+        output_fields: Annotated[
+            list[str] | None,
+            "Requested fields for the base result. For expansion quotes, include fields to surface.",
+        ] = None,
+        parent_result_id: Annotated[
+            str | None,
+            "When quoting an expansion, include parent_result_id (UUID). Otherwise omit/null.",
+        ] = None,
         expansion_scope: Annotated[
             dict | None,
             "Optional expansion scope keyed by expansion type, such as {'contact_unlock': {'selection': {'mode': 'top_n', 'count': 5}, 'contact_fields': ['email']}} or {'increase_limit': {'additional': 10}}.",
@@ -235,6 +244,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "so backend routing can apply general or hackathon-heavy builder matching. "
             "For wallet identity or attribution, use wallet-intelligence-v1 only with a concrete wallet address, "
             "concrete entity/label query, newline-separated wallet addresses, or parsed wallet CSV asset slots; generic wallet-intelligence setup prompts should use resolve_intelligence_intent or ask for wallet input first. "
+            "The backend handles local lookup and external wallet intelligence enrichment under the same package. "
             "For custom result amounts, set slots.limit to the requested count. For new-results-only follow-ups, set "
             "slots.exclude_previously_delivered=true and optionally combine it with slots.limit. For expansion quotes, "
             "use parent_result_id and expansion_scope keyed by the expansion type returned in available_expansions. "
@@ -251,11 +261,17 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def quote_intelligence_package(
         package_id: Annotated[
             str,
-            "Package ID to quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use builder-discovery-v1 for builder, hackathon, winner, or bounty asks; use wallet-intelligence-v1 for wallet identity lookup.",
+            "Package ID to quote. One of: vc-shortlist-v1, builder-discovery-v1, company-people-discovery-v1, warm-intro-paths-v1, kol-discovery-v1, user-prospect-v1, wallet-intelligence-v1",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots). For wallet-intelligence-v1, include address/query, wallet_rows, wallet_addresses, or an asset_handle from a wallet CSV."],
-        output_fields: Annotated[list[str] | None, "Output fields for base-result quotes."] = None,
-        parent_result_id: Annotated[str | None, "When quoting an expansion, provide parent_result_id."] = None,
+        output_fields: Annotated[
+            list[str] | None,
+            "Requested fields for base-result quotes. For expansion quotes, include fields to surface.",
+        ] = None,
+        parent_result_id: Annotated[
+            str | None,
+            "When quoting an expansion, include the parent_result_id (UUID). Otherwise omit/null for execute quote.",
+        ] = None,
         expansion_scope: Annotated[
             dict | None,
             "Optional expansion scope keyed by expansion type, such as {'show_people_at_entity': {'selection': {'mode': 'top_n', 'count': 1}, 'people_limit': 5}}.",
@@ -322,7 +338,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="execute_intelligence_package",
-        description="Run an approved intelligence discovery request. Only use after explicit user confirmation of the quote.",
+        description="Run an approved intelligence discovery request. ONLY call this after explicit user confirmation of the quote.",
         annotations=ToolAnnotations(
             title="Execute Intelligence Package",
             readOnlyHint=False,
@@ -332,9 +348,9 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         tags={"intelligence", "official", "execute"},
     )
     async def execute_intelligence_package(
-        package_id: Annotated[str, "Package ID to execute (must match the quote payload)."],
-        slots: Annotated[dict, "Slot values (must match the quote payload)."],
-        output_fields: Annotated[list[str], "Output fields that must match the quote payload."],
+        package_id: Annotated[str, "Package ID to execute."],
+        slots: Annotated[dict, "Slot values (must match the quoted payload)."],
+        output_fields: Annotated[list[str], "Output fields that must match the quoted payload."],
         quote_token: Annotated[str, "Quote token returned by quote_intelligence_package."],
         workflow_id: Annotated[
             str | None,
@@ -386,7 +402,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "Fetch a saved intelligence result by result_id. Use this for result_ids returned by "
             "execute_intelligence_package or expand_intelligence_package. Do not use "
             "fetch_result_summary for these intelligence result_ids. "
-            "Use when the user wants the saved result inspected in chat; records are truncated to keep responses manageable."
+            "Use only when the user wants the saved result inspected in chat. Records are truncated to keep responses manageable."
         ),
         annotations=ToolAnnotations(
             title="Fetch Intelligence Result",

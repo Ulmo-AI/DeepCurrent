@@ -1,0 +1,32 @@
+name: Release MCP package
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip build
+      - run: python -m pip install . pytest pytest-asyncio
+      - run: pytest -q
+      - run: PYTHONPATH=src:. python scripts/export_tool_manifest.py > /tmp/official-tool-manifest.json
+      - run: echo "$(cat contracts/official-tool-manifest.sha256)  /tmp/official-tool-manifest.json" | sha256sum --check --strict
+      - run: python -m build
+      - run: python -m venv /tmp/deepcurrent-wheel-smoke
+      - run: /tmp/deepcurrent-wheel-smoke/bin/pip install dist/*.whl
+      - run: /tmp/deepcurrent-wheel-smoke/bin/python -c "import asyncio; from deepcurrent_local_mcp.main import mcp; assert 'search_leads' in {t.name for t in asyncio.run(mcp.list_tools())}"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
