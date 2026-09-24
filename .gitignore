@@ -16,6 +16,9 @@ env/
 .mypy_cache/
 .ruff_cache/
 .coverage
+build/
+dist/
+*.egg-info/
 
 # Secrets / local config
 .env
@@ -24,4 +27,3 @@ env/
 
 # OS
 .DS_Store
-

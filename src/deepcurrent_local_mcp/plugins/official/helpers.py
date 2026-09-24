@@ -5,15 +5,18 @@ from typing import Annotated, Any
 from fastmcp import FastMCP
 
 from ...cloud import CloudAPIError
-from ...runtime import get_telemetry, require_cloud_client
+from ...policy import (
+    MAX_RECORDS_PER_CALL,
+    bound_output,
+    require_bounded_payload,
+)
+from ...runtime import error_result, get_telemetry, require_cloud_client
 from ...telemetry import finish_tool_timing, start_tool_timing
 
 # Match remote `src/app/tools/helpers.py` tag convention.
 _UTILITY = {"utility"}
 
 _SOURCE = {"badge": "official", "publisher": "DeepCurrent", "execution_mode": "deepcurrent-cloud"}
-
-
 def register_utility_tools(mcp: FastMCP) -> None:
     @mcp.tool(
         name="fetch_result_summary",
@@ -37,6 +40,7 @@ def register_utility_tools(mcp: FastMCP) -> None:
         timing = start_tool_timing(tool_name="fetch_result_summary", badge="official")
         telemetry = get_telemetry()
         try:
+            require_bounded_payload({"result_id": result_id})
             client = require_cloud_client()
             body = await client.get_json(f"/api/v1/results/{result_id}/summary")
             telemetry.capture_background(
@@ -58,9 +62,9 @@ def register_utility_tools(mcp: FastMCP) -> None:
                 "source": _SOURCE,
                 "status": body.get("status", "success"),
                 "result_id": result_id,
-                "summary": body.get("summary", {}),
-                "artifacts": body.get("artifacts", []),
-                "downloads": body.get("downloads", []),
+                "summary": bound_output(body.get("summary", {})),
+                "artifacts": bound_output(body.get("artifacts", [])),
+                "downloads": bound_output(body.get("downloads", [])),
             }
         except CloudAPIError as exc:
             telemetry.capture_background(
@@ -79,10 +83,11 @@ def register_utility_tools(mcp: FastMCP) -> None:
                     " If this result_id came from execute_intelligence_package or "
                     "expand_intelligence_package, call fetch_intelligence_result instead."
                 )
-            return {
-                "status": "error",
-                "message": f"Failed to fetch result summary ({exc.status_code}): {exc.message}{hint}",
-            }
+            return error_result(
+                status_code=exc.status_code or 0,
+                message=f"Failed to fetch result summary ({exc.status_code}): {exc.message}{hint}",
+                body=exc.body,
+            )
 
     @mcp.tool(
         name="fetch_result_artifact",
@@ -104,8 +109,14 @@ def register_utility_tools(mcp: FastMCP) -> None:
         timing = start_tool_timing(tool_name="fetch_result_artifact", badge="official")
         telemetry = get_telemetry()
         try:
+            require_bounded_payload(
+                {"result_id": result_id, "artifact_id": artifact_id}
+            )
             client = require_cloud_client()
-            body = await client.get_json(f"/api/v1/results/{result_id}/artifacts/{artifact_id}")
+            body = await client.get_json(
+                f"/api/v1/results/{result_id}/artifacts/{artifact_id}",
+                params={"limit": MAX_RECORDS_PER_CALL, "offset": 0},
+            )
             telemetry.capture_background(
                 event="tool_executed",
                 properties={
@@ -124,7 +135,7 @@ def register_utility_tools(mcp: FastMCP) -> None:
                 "source": _SOURCE,
                 "status": "success",
                 "result_id": result_id,
-                "artifact": body.get("artifact"),
+                "artifact": bound_output(body.get("artifact")),
             }
         except CloudAPIError as exc:
             telemetry.capture_background(
@@ -137,7 +148,8 @@ def register_utility_tools(mcp: FastMCP) -> None:
                     "latency_ms": finish_tool_timing(timing),
                 },
             )
-            return {
-                "status": "error",
-                "message": f"Failed to fetch artifact ({exc.status_code}): {exc.message}",
-            }
+            return error_result(
+                status_code=exc.status_code or 0,
+                message=f"Failed to fetch artifact ({exc.status_code}): {exc.message}",
+                body=exc.body,
+            )

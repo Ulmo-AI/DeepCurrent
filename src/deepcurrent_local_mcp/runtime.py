@@ -48,12 +48,25 @@ def get_telemetry() -> TelemetryClient:
 def ok_result(*, text: str, structured: dict[str, Any]) -> dict[str, Any]:
     # Keep "structured" fields at the top-level so clients can access
     # keys like quote_token / credits without extra nesting.
-    return {"ok": True, "text": text, **(structured or {})}
+    from .policy import bound_output
+
+    return {"ok": True, "text": text, **bound_output(structured or {})}
 
 
 def error_result(*, status_code: int, message: str, body: Any | None = None) -> dict[str, Any]:
     payload: dict[str, Any] = {"status_code": status_code, "message": message}
     if body is not None:
         payload["body"] = body
+        detail = body.get("detail") if isinstance(body, dict) else None
+        if isinstance(detail, dict):
+            for key in ("code", "retry_after_seconds", "resets_at", "suggested_next_action"):
+                value = detail.get(key)
+                if value is not None:
+                    payload[key] = value
+        transport = body.get("_transport") if isinstance(body, dict) else None
+        if isinstance(transport, dict):
+            for key in ("code", "retry_after_seconds", "request_id"):
+                value = transport.get(key)
+                if value is not None:
+                    payload[key] = value
     return {"ok": False, "text": message, "error": payload}
-

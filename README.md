@@ -15,8 +15,8 @@ This repo contains the open-source **local MCP server** for bring-your-own-data 
 
 ## What DeepCurrent Unlocks
 
-- **Telegram-native growth intelligence:** find prospects in target groups, monitor pain and intent, detect competitor displacement, and expand KOL audiences from high-signal communities.
-- **Evidence-backed lead discovery:** rank people, projects, builders, KOLs, funds, and communities with fit reasons, confidence, evidence snippets, and recommended next actions.
+- **Lead Search:** search DeepCurrent People, Companies, Funds, and Wallets with the same validated filters and account limits used by the product.
+- **Evidence-backed intelligence:** run quote-first discovery packages with fit reasons, confidence, evidence snippets, and recommended next actions.
 - **Web3 research workflows:** enrich companies, projects, people, wallets, funding context, ecosystem roles, and relationship paths from DeepCurrent intelligence surfaces.
 - **DeepDive execution planning:** resolve an outcome, quote the work, run the plan, and retrieve structured results through one agent-friendly tool chain.
 - **Local bring-your-own-data connectors:** keep user-owned files, keys, and community connectors on your machine while still using Cloud tools when you provide an API key.
@@ -324,8 +324,14 @@ Trust model:
 Official (cloud-backed when an API key is configured):
 
 - `connect_deepcurrent_cloud`
+- `get_deepcurrent_capabilities`
 - `get_credit_status`
 - `claim_growth_credits`
+- `get_lead_search_schema`
+- `search_leads`
+- `list_saved_searches`
+- `save_lead_search`
+- `delete_saved_search`
 - `resolve_deepdive_outcome`
 - `quote_deepdive_plan`
 - `run_deepdive_plan`
@@ -346,6 +352,8 @@ Community (bring-your-own-data):
 
 ## How agents should use it
 
+- Start with `get_deepcurrent_capabilities`, then call `get_lead_search_schema` before applying unfamiliar filters.
+- Use `search_leads` for bounded People, Companies, Funds, and Wallet discovery. Pagination and account exposure limits are enforced by DeepCurrent Cloud.
 - Start with `resolve` to clarify the requested outcome before spending credits.
 - Use `preview_quote` / `quote` before any paid or proprietary action.
 - Use `execute` to get curated results.

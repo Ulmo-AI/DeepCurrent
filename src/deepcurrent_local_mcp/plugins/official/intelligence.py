@@ -6,6 +6,7 @@ from fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 from ...cloud import CloudAPIError
+from ...policy import require_bounded_payload
 from ...runtime import error_result, get_telemetry, ok_result, require_cloud_client
 from ...telemetry import finish_tool_timing, start_tool_timing
 
@@ -16,20 +17,17 @@ def _truncate_records(payload: dict[str, Any], *, max_records: int = 25) -> dict
     """
     Keep tool outputs bounded to avoid dumping huge payloads into model context.
     """
-    try:
-        records = payload.get("records")
-        if not isinstance(records, list):
-            return payload
-        if len(records) <= max_records:
-            return payload
-        return {
-            **payload,
-            "records": records[:max_records],
-            "records_truncated": True,
-            "records_truncated_to": max_records,
-        }
-    except Exception:
+    records = payload.get("records")
+    if not isinstance(records, list):
         return payload
+    if len(records) <= max_records:
+        return payload
+    return {
+        **payload,
+        "records": records[:max_records],
+        "records_truncated": True,
+        "records_truncated_to": max_records,
+    }
 
 
 def _payload_with_source(payload: Any) -> dict[str, Any]:
@@ -58,9 +56,12 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def resolve_intelligence_intent(
         package_id: Annotated[
             str,
-            "Supported package ID, including company-people-discovery-v1 for named-company people discovery. Use builder-discovery-v1 for builder, hackathon, winner, or bounty asks.",
+            "Package ID to resolve. One of: vc-shortlist-v1, builder-discovery-v1, company-people-discovery-v1, warm-intro-paths-v1, kol-discovery-v1, user-prospect-v1, wallet-intelligence-v1",
         ],
-        slots: Annotated[dict, "Slot values. Missing required slots return clarification questions."] = {},
+        slots: Annotated[
+            dict | None,
+            "Slot values for this package. If required slots are missing, the response includes clarification questions.",
+        ] = None,
         request_text: Annotated[
             str | None,
             "Optional raw user request text to help clarify incomplete slots.",
@@ -74,14 +75,16 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
+            request = {
+                "package_id": package_id,
+                "slots": slots or {},
+                "request_text": request_text,
+                "workflow_id": workflow_id,
+            }
+            require_bounded_payload(request)
             payload = await client.post_json(
                 "/api/v1/intelligence/resolve",
-                json_body={
-                    "package_id": package_id,
-                    "slots": slots or {},
-                    "request_text": request_text,
-                    "workflow_id": workflow_id,
-                },
+                json_body=request,
             )
             telemetry.capture_background(
                 event="tool_executed",
@@ -139,11 +142,17 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def preview_quote_intelligence_package(
         package_id: Annotated[
             str,
-            "Package ID to preview and quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use builder-discovery-v1 for builder, hackathon, winner, or bounty asks; use wallet-intelligence-v1 for wallet identity lookup.",
+            "Package ID. One of: vc-shortlist-v1, builder-discovery-v1, company-people-discovery-v1, warm-intro-paths-v1, kol-discovery-v1, user-prospect-v1, wallet-intelligence-v1",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots for quote). For wallet-intelligence-v1, include address/query, wallet_rows, wallet_addresses, or an asset_handle from a wallet CSV."],
-        output_fields: Annotated[list[str], "Requested fields for the base result."] = [],
-        parent_result_id: Annotated[str | None, "When quoting an expansion, provide parent_result_id."] = None,
+        output_fields: Annotated[
+            list[str] | None,
+            "Requested fields for the base result. For expansion quotes, include fields to surface.",
+        ] = None,
+        parent_result_id: Annotated[
+            str | None,
+            "When quoting an expansion, include parent_result_id (UUID). Otherwise omit/null.",
+        ] = None,
         expansion_scope: Annotated[
             dict | None,
             "Optional expansion scope keyed by expansion type, such as {'contact_unlock': {'selection': {'mode': 'top_n', 'count': 5}, 'contact_fields': ['email']}} or {'increase_limit': {'additional': 10}}.",
@@ -179,6 +188,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             if anchor_quote_token and str(anchor_quote_token).strip():
                 req["anchor_quote_token"] = str(anchor_quote_token).strip()
 
+            require_bounded_payload(req)
             raw = await client.post_json("/api/v1/intelligence/preview-quote", json_body=req)
             body = dict(raw) if isinstance(raw, dict) else {"payload": raw}
             q = body.get("quote")
@@ -234,6 +244,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "so backend routing can apply general or hackathon-heavy builder matching. "
             "For wallet identity or attribution, use wallet-intelligence-v1 only with a concrete wallet address, "
             "concrete entity/label query, newline-separated wallet addresses, or parsed wallet CSV asset slots; generic wallet-intelligence setup prompts should use resolve_intelligence_intent or ask for wallet input first. "
+            "The backend handles local lookup and external wallet intelligence enrichment under the same package. "
             "For custom result amounts, set slots.limit to the requested count. For new-results-only follow-ups, set "
             "slots.exclude_previously_delivered=true and optionally combine it with slots.limit. For expansion quotes, "
             "use parent_result_id and expansion_scope keyed by the expansion type returned in available_expansions. "
@@ -250,11 +261,17 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def quote_intelligence_package(
         package_id: Annotated[
             str,
-            "Package ID to quote. Use company-people-discovery-v1 first for named-company people or leadership discovery; use builder-discovery-v1 for builder, hackathon, winner, or bounty asks; use wallet-intelligence-v1 for wallet identity lookup.",
+            "Package ID to quote. One of: vc-shortlist-v1, builder-discovery-v1, company-people-discovery-v1, warm-intro-paths-v1, kol-discovery-v1, user-prospect-v1, wallet-intelligence-v1",
         ],
         slots: Annotated[dict, "Slot values (must satisfy required slots). For wallet-intelligence-v1, include address/query, wallet_rows, wallet_addresses, or an asset_handle from a wallet CSV."],
-        output_fields: Annotated[list[str], "Output fields for base-result quotes."] = [],
-        parent_result_id: Annotated[str | None, "When quoting an expansion, provide parent_result_id."] = None,
+        output_fields: Annotated[
+            list[str] | None,
+            "Requested fields for base-result quotes. For expansion quotes, include fields to surface.",
+        ] = None,
+        parent_result_id: Annotated[
+            str | None,
+            "When quoting an expansion, include the parent_result_id (UUID). Otherwise omit/null for execute quote.",
+        ] = None,
         expansion_scope: Annotated[
             dict | None,
             "Optional expansion scope keyed by expansion type, such as {'show_people_at_entity': {'selection': {'mode': 'top_n', 'count': 1}, 'people_limit': 5}}.",
@@ -290,6 +307,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             if anchor_quote_token and str(anchor_quote_token).strip():
                 req["anchor_quote_token"] = str(anchor_quote_token).strip()
 
+            require_bounded_payload(req)
             payload = await client.post_json("/api/v1/intelligence/quote", json_body=req)
             credits = payload.get("credits") if isinstance(payload, dict) else None
             telemetry.capture_background(
@@ -320,7 +338,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="execute_intelligence_package",
-        description="Run an approved intelligence discovery request. Only use after explicit user confirmation of the quote.",
+        description="Run an approved intelligence discovery request. ONLY call this after explicit user confirmation of the quote.",
         annotations=ToolAnnotations(
             title="Execute Intelligence Package",
             readOnlyHint=False,
@@ -330,9 +348,9 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         tags={"intelligence", "official", "execute"},
     )
     async def execute_intelligence_package(
-        package_id: Annotated[str, "Package ID to execute (must match the quote payload)."],
-        slots: Annotated[dict, "Slot values (must match the quote payload)."],
-        output_fields: Annotated[list[str], "Output fields that must match the quote payload."],
+        package_id: Annotated[str, "Package ID to execute."],
+        slots: Annotated[dict, "Slot values (must match the quoted payload)."],
+        output_fields: Annotated[list[str], "Output fields that must match the quoted payload."],
         quote_token: Annotated[str, "Quote token returned by quote_intelligence_package."],
         workflow_id: Annotated[
             str | None,
@@ -343,15 +361,17 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
+            request = {
+                "package_id": package_id,
+                "slots": slots or {},
+                "output_fields": output_fields or [],
+                "quote_token": quote_token,
+                "workflow_id": workflow_id,
+            }
+            require_bounded_payload(request)
             payload = await client.post_json(
                 "/api/v1/intelligence/execute",
-                json_body={
-                    "package_id": package_id,
-                    "slots": slots or {},
-                    "output_fields": output_fields or [],
-                    "quote_token": quote_token,
-                    "workflow_id": workflow_id,
-                },
+                json_body=request,
             )
             telemetry.capture_background(
                 event="tool_executed",
@@ -382,7 +402,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "Fetch a saved intelligence result by result_id. Use this for result_ids returned by "
             "execute_intelligence_package or expand_intelligence_package. Do not use "
             "fetch_result_summary for these intelligence result_ids. "
-            "Use when the user wants the saved result inspected in chat; records are truncated to keep responses manageable."
+            "Use only when the user wants the saved result inspected in chat. Records are truncated to keep responses manageable."
         ),
         annotations=ToolAnnotations(
             title="Fetch Intelligence Result",
@@ -399,7 +419,10 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
-            payload = await client.get_json(f"/api/v1/intelligence/results/{result_id}")
+            payload = await client.get_json(
+                f"/api/v1/intelligence/results/{result_id}",
+                params={"limit": 25, "offset": 0},
+            )
             if isinstance(payload, dict):
                 payload = _truncate_records(payload, max_records=25)
             telemetry.capture_background(
@@ -450,23 +473,25 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "Expansion type returned by available_expansions, for example contact_unlock, increase_limit, show_people_at_entity, show_investors_for_company, or wallet_activity_snapshot.",
         ],
         expansion_params: Annotated[
-            dict,
+            dict | None,
             "Expansion parameters for expansion_type. Examples: {'additional': 10}, {'selection': {'mode': 'top_n', 'count': 5}, 'contact_fields': ['email']}, or {'selection': {'mode': 'explicit_ids', 'ids': ['...']}}.",
-        ] = {},
+        ] = None,
         quote_token: Annotated[str, "Quote token returned by quote_intelligence_package for this expansion."] = "",
     ) -> dict[str, Any]:
         timing = start_tool_timing(tool_name="expand_intelligence_package", badge="official")
         telemetry = get_telemetry()
         try:
             client = require_cloud_client()
+            request = {
+                "parent_result_id": parent_result_id,
+                "expansion_type": expansion_type,
+                "expansion_params": expansion_params or {},
+                "quote_token": quote_token,
+            }
+            require_bounded_payload(request)
             payload = await client.post_json(
                 "/api/v1/intelligence/expand",
-                json_body={
-                    "parent_result_id": parent_result_id,
-                    "expansion_type": expansion_type,
-                    "expansion_params": expansion_params or {},
-                    "quote_token": quote_token,
-                },
+                json_body=request,
             )
             if isinstance(payload, dict) and "records" in payload:
                 payload = _truncate_records(payload, max_records=25)
